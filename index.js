@@ -12,11 +12,66 @@ const main = async () => {
 
   //group
   const group = new THREE.Group();
+  const lampGroup = new THREE.Group();
 
   // Add cube to the scene
-  // const cube = await windowCube(scene, 2, 2, 2, 0x000000, 0, 0, 0);
-  const building = await windowCube(scene, 5, 10, 5, 0xff0000, 0, 5, 0);
-  // const cubeBorder = await windowCubeBorder(
+  // const cube = await windowBox(scene, 2, 2, 2, 0x000000, 0, 0, 0);
+  const footPath = await windowBox(scene, 50, 5, 500, 0x1a1a1a, 0, 0, -100);
+
+  const wall = await windowBox(scene, 500, 100, 10, 0xb3b3cc, 0, 45, -390);
+  // const axeShape = new THREE.Shape();
+  // axeShape.moveTo(0, 20, -300);
+  // axeShape.lineTo(7, 20, -300);
+  // axeShape.lineTo(7, 30, -300);
+  // axeShape.lineTo(13, 30, -300);
+  // axeShape.lineTo(13, 20, -300);
+  // axeShape.lineTo(20, 20, -300);
+  // axeShape.lineTo(20, 40, -300);
+  // axeShape.lineTo(0, 40, -300);
+  // // axeShape.lineTo(10, 10, -300);
+  // // axeShape.lineTo(10, 10, -300);
+  // // axeShape.lineTo(10, -10, -300);
+  // // axeShape.lineTo(-10, -10, -300);
+  // scene.add(
+  //   new THREE.Mesh(
+  //     new THREE.ShapeGeometry(axeShape),
+  //     new THREE.MeshBasicMaterial({ color: 0xff0000 })
+  //   )
+  // );
+
+  // Define a shape using points
+  const shapePoints = [
+    new THREE.Vector2(0, 20), // Start point
+    new THREE.Vector2(7, 20), // Second point
+    new THREE.Vector2(7, 30), // Third point
+    new THREE.Vector2(13, 30), // Fourth point
+    new THREE.Vector2(13, 20), // Fifth point
+    new THREE.Vector2(20, 20), // 6 point
+    new THREE.Vector2(20, 40), // 7 point
+    new THREE.Vector2(0, 40), // 8 point
+  ];
+  // Create a shape from the points
+  const shape = new THREE.Shape(shapePoints);
+
+  // Define settings for extrusion
+  const extrudeSettings = {
+    depth: 1, // Depth of extrusion
+    bevelEnabled: false, // Disable bevel
+  };
+
+  // Create a geometry by extruding the shape
+  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+  // Create a material
+  const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+  // Create a mesh using the geometry and material
+  const mesh = new THREE.Mesh(geometry, material);
+
+  // Add the mesh to the scene
+  scene.add(mesh);
+
+  // const cubeBorder = await windowBoxBorder(
   //   scene,
   //   2.2,
   //   2.2,
@@ -29,14 +84,97 @@ const main = async () => {
   // const torus = await windowTorus(scene, 100, 0x000000, 0, 1, 1);
   // const torus2 = await windowTorus(scene, 3, 0x000000, 0, 1, 1);
   // const circle = await windowSphere(scene, 1, 10, 10, 0x000000, 0, 0, 0);
-  const circle = await windowSphere(scene, 3, 32, 32, 0xff00ff, -10, 5, -10);
+  const circle = await windowSphere(
+    scene,
+    false,
+    3,
+    32,
+    32,
+    0xff00ff,
+    -10,
+    5,
+    -10
+  );
   circle.name = 'circle';
   // const circle2 = await windowSphere(scene, 0.5, 32, 32, 0x00ffff, 4, 10, 2);
+  const lightSource = await windowSphere(
+    scene,
+    group,
+    1.3,
+    32,
+    32,
+    0xffffff,
+    0,
+    21,
+    0
+  );
+  // const particle = await windowPartial(scene);
 
-  const floor = await windowPlane(scene);
-  const spotLight = await windowSpotLight(scene, group);
-  const cylinder = await windowCylinder(scene, group);
-  console.log(spotLight, 'spotLight');
+  const circle2 = await windowCircle(scene, group, 0x808000, 2, 32, 0, 25, 0);
+  const floor = await windowPlane(scene, 0x808080, 500, 500, 0, 0, -100, 2);
+  // const floor2 = await windowPlane(scene, 0x808000, 100, 100, 0, 0, -30, 1);
+  const spotLight = await windowSpotLight(scene, group, 0xffffff, 0, 20, 0);
+  const cylinder = await windowCylinder(
+    scene,
+    group,
+    2,
+    3,
+    5,
+    10,
+    1,
+    true,
+    0x663300,
+    0,
+    22.5,
+    0,
+    0
+  );
+  const cylinder2 = await windowCylinder(
+    scene,
+    group,
+    0.5,
+    0.5,
+    3,
+    10,
+    1,
+    false,
+    0x734d26,
+    0,
+    26.5,
+    0,
+    0
+  );
+  const cylinder4 = await windowCylinder(
+    scene,
+    group,
+    1,
+    1,
+    30,
+    10,
+    1,
+    false,
+    0x734d26,
+    10,
+    15,
+    0,
+    0
+  );
+  const cylinder3 = await windowCylinder(
+    scene,
+    group,
+    0.5,
+    0.5,
+    10,
+    10,
+    1,
+    false,
+    0x734d26,
+    5,
+    26.5,
+    0,
+    2
+  );
+  // console.log(spotLight, 'spotLight');
   // Add ambient light to illuminate the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
@@ -51,16 +189,65 @@ const main = async () => {
   // console.log(text, 'text');
 
   // Add the group to the scene
+
   scene.add(group);
-  group.rotation.y = 0.5;
-  group.position.set(3, 0, 5);
+
+  const streetLight = group.clone();
+  console.log(streetLight, 'streetLight');
+  streetLight.position.set(0, 0, -60);
+  scene.add(streetLight);
+  streetLight.children[2].target.position.copy(streetLight.position); // Set the target of the spotlight to a point below the scene
+  scene.add(streetLight.children[2].target);
+  // 0
+  const streetLight0 = group.clone();
+  streetLight0.position.set(0, 0, 60);
+  scene.add(streetLight0);
+  streetLight0.children[2].target.position.copy(streetLight0.position); // Set the target of the spotlight to a point below the scene
+  scene.add(streetLight0.children[2].target);
+  // -1
+  const streetLightm1 = group.clone();
+  streetLightm1.position.set(0, 0, 120);
+  scene.add(streetLightm1);
+  streetLightm1.children[2].target.position.copy(streetLightm1.position); // Set the target of the spotlight to a point below the scene
+  scene.add(streetLightm1.children[2].target);
+
+  // 2
+  const streetLight2 = group.clone();
+  streetLight2.position.set(0, 0, -120);
+  scene.add(streetLight2);
+  streetLight2.children[2].target.position.copy(streetLight2.position); // Set the target of the spotlight to a point below the scene
+  scene.add(streetLight2.children[2].target);
+
+  // 3
+  const streetLight3 = group.clone();
+  streetLight3.position.set(0, 0, -180);
+  scene.add(streetLight3);
+  streetLight3.children[2].target.position.copy(streetLight3.position); // Set the target of the spotlight to a point below the scene
+  scene.add(streetLight3.children[2].target);
+
+  // 4
+  const streetLight4 = group.clone();
+  streetLight4.position.set(0, 0, -240);
+  scene.add(streetLight4);
+  streetLight4.children[2].target.position.copy(streetLight4.position); // Set the target of the spotlight to a point below the scene
+  scene.add(streetLight4.children[2].target);
+
+  // const spotLightHelpe = new THREE.SpotLightHelper(streetLight.children[]);
+  // scene.add(spotLightHelpe);
+  // console.log(streetLight, 'streetLight');
+  // group.position.set(5, 0, 0);
+  // group.rotation.z = 0.5;
+  // group.rotation.x = 1.3;
+  // Update the spotlight position relative to the group's world position
+  // spotLight.position.copy(group.localToWorld(new THREE.Vector3(20, 0, 0)));
 
   // // Add mouse interaction for rotating the torus
   // addMouseInteraction(renderer.domElement, torus);
   // addMouseInteraction(renderer.domElement, cube);
-  // addMouseInteraction(renderer.domElement, cubeBorder);
+  // addMouseInteraction(renderer.domElement, cubeBorder)
   addMouseInteraction(renderer.domElement, group, camera);
 
+  // scene.fog = new THREE.Fog(0xcccccc, 1, 500);
   renderer.shadowMap.enabled = true;
 
   // Start the animation loop
@@ -72,10 +259,11 @@ const main = async () => {
   // animate(scene, camera, renderer, text, 0, 0, 0);
   // animate(scene, camera, renderer, building, 0, 0, 0);
   animate(scene, camera, renderer, circle, 0.0, 0.01, 0.0);
-  // animate(scene, camera, renderer, cylinder, 0.0, 0.01, 0.0);
-  animate(scene, camera, renderer, building, 0.0, -0.01, 0.0);
-  animate(scene, camera, renderer, floor, 0.0, 0.0, 0.01);
-  animate(scene, camera, renderer, group, 0.0, 0.01, 0.0);
+  // animate(scene, camera, renderer, particle, 0.0, 0.0, 0.0);
+  // animate(scene, camera, renderer, circle2, 0.01, 0.0, 0.0);
+  // animate(scene, camera, renderer, building, 0.0, -0.01, 0.0);
+  // animate(scene, camera, renderer, floor, 0.0, 0.0, 0.01);
+  // animate(scene, camera, renderer, group, 0.0, 0.01, 0.0);
 };
 
 const windowCamera = async () => {
@@ -100,7 +288,7 @@ const windowRenderer = async () => {
   return renderer;
 };
 
-const windowCube = async (scene, x, y, z, color, px, py, pz) => {
+const windowBox = async (scene, x, y, z, color, px, py, pz) => {
   const geometry = new THREE.BoxGeometry(x, y, z); // create a cube geometry
   const material = new THREE.MeshStandardMaterial({ color }); // create a material for the cube geometry
 
@@ -115,7 +303,7 @@ const windowCube = async (scene, x, y, z, color, px, py, pz) => {
   return cube;
 };
 
-const windowCubeBorder = async (scene) => {
+const windowBoxBorder = async (scene) => {
   const geometry = new THREE.BoxGeometry(2.1, 2.1, 2.1); // create a cube geometry
   const material = new THREE.MeshBasicMaterial({
     color: 0xffffff, // white color
@@ -144,6 +332,7 @@ const windowTorus = async (scene, angle, color, px, py, pz) => {
 
 const windowSphere = async (
   scene,
+  group,
   radius,
   width,
   height,
@@ -153,12 +342,19 @@ const windowSphere = async (
   pz
 ) => {
   const geometry = new THREE.SphereGeometry(radius, width, height);
-  const material = new THREE.MeshStandardMaterial({ color, wireframe: true });
+  const material = new THREE.MeshStandardMaterial({ color });
   const sphere = new THREE.Mesh(geometry, material);
   sphere.position.set(px, py, pz);
   sphere.castShadow = true;
   sphere.receiveShadow = true;
-  scene.add(sphere);
+  if (group) {
+    sphere.material.color.r = 1.6;
+    sphere.material.color.g = 1.6;
+    sphere.material.color.b = 1.6;
+    group.add(sphere);
+  } else {
+    scene.add(sphere);
+  }
 
   return sphere;
 };
@@ -190,59 +386,131 @@ const windowText = async (scene, text, color, x, y, z) => {
   });
 };
 
-const windowPlane = async (scene) => {
+const windowPlane = async (scene, color, x, y, px, py, pz, rotation) => {
   // Create a floor to receive shadows
-  const floorGeometry = new THREE.PlaneGeometry(100, 100);
+  const floorGeometry = new THREE.PlaneGeometry(x, y);
   const floorMaterial = new THREE.MeshStandardMaterial({
-    color: 0x808080,
+    color,
     side: THREE.DoubleSide,
   });
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.rotation.x = Math.PI / 2; // Rotate the floor to lie flat
+  floor.rotation.x = Math.PI / rotation; // Rotate the floor to lie flat
   floor.receiveShadow = true; // Enable shadow receiving
-  floor.position.set(0, -1, -10);
+  floor.position.set(px, py, pz);
   scene.add(floor);
 
   return floor;
 };
 
-const windowSpotLight = async (scene, group) => {
+const windowSpotLight = async (scene, group, color, px, py, pz) => {
   // Create a spotlight
-  const spotLight = new THREE.SpotLight(0xffffff); // White light
-  spotLight.position.set(10, 20, 10); // Position the light
+  const spotLight = new THREE.SpotLight(color, 3); // White light
+  spotLight.position.set(px, py, pz); // Position the light
   spotLight.castShadow = true; // Enable shadow casting
-  group.add(spotLight);
   spotLight.penumbra = 0.15;
-  // // Set up shadow properties for the spotlight
-  // spotLight.shadow.mapSize.width = 1024;
-  // spotLight.shadow.mapSize.height = 1024;
-  // spotLight.shadow.camera.near = 1;
-  // spotLight.shadow.camera.far = 100;
-  // spotLight.shadow.camera.fov = 45;
+  spotLight.target.position.set(0, -10, 0); // Set the target of the spotlight to a point below the scene
+  group.add(spotLight);
+
+  // spotLight.target.updateMatrixWorld(); // Update the target's matrix world to reflect its position
+  // spotLight.target.updateWorldMatrix(true, false); // Update the world matrix of the target
+  // spotLight.target.updateMatrix(); // Update the matrix of the target
 
   // Create a line to visualize spotlight direction
   // const spotLightHelper = new THREE.SpotLightHelper(spotLight);
   // scene.add(spotLightHelper);
-  // console.log(spotLightHelper, 'spotLightHelper');
+  // group.add(light.target);
 
   return spotLight;
 };
 
-const windowCylinder = async (scene, group) => {
-  const geometry = new THREE.CylinderGeometry(2, 3, 5, 10, 1, true);
-  const material = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+const windowCylinder = async (
+  scene,
+  group,
+  radiusTop,
+  radiusBottom,
+  height,
+  radialSegments,
+  heightSegments,
+  openEnded,
+  color,
+  px,
+  py,
+  pz,
+  rotation
+) => {
+  const geometry = new THREE.CylinderGeometry(
+    radiusTop,
+    radiusBottom,
+    height,
+    radialSegments,
+    heightSegments,
+    openEnded
+  );
+  const material = new THREE.MeshStandardMaterial({ color });
   const cylinder = new THREE.Mesh(geometry, material);
   group.add(cylinder);
-  cylinder.position.set(10, 20, 10);
+  cylinder.position.set(px, py, pz);
   cylinder.castShadow = true;
   cylinder.receiveShadow = true;
+  cylinder.rotation.z = rotation == 0 ? 0 : -Math.PI / rotation;
+  // cylinder.rotation.y = rotation == 0 ? 0 : -Math.PI / rotation;
 
   // Set rotation of the cylinder
   // cylinder.rotation.x = 100;
-  cylinder.rotation.y = -20;
-  cylinder.rotation.z = -10;
+  // cylinder.rotation.y = -20;
+  // cylinder.rotation.z = -10;
 
   return cylinder;
+};
+
+const windowCircle = async (
+  scene,
+  group,
+  color,
+  radius,
+  segments,
+  px,
+  py,
+  pz
+) => {
+  const geometry = new THREE.CircleGeometry(radius, segments);
+  const material = new THREE.MeshBasicMaterial({ color });
+  const circle = new THREE.Mesh(geometry, material);
+  circle.position.set(px, py, pz);
+  circle.rotation.x = -Math.PI / 2;
+  group.add(circle);
+
+  return circle;
+};
+
+const windowPartial = async (scene) => {
+  // Create particle geometry
+  const particleCount = 1000;
+  const particles = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3); // Each particle has 3 coordinates (x, y, z)
+
+  for (let i = 0; i < particleCount; i++) {
+    // Randomly generate positions within a range
+    positions[i * 3] = Math.random() * 10 - 5; // x position
+    positions[i * 3 + 1] = Math.random() * 10 - 5; // y position
+    positions[i * 3 + 2] = Math.random() * 10 - 5; // z position
+  }
+
+  // Set positions attribute
+  particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+  // Create particle material
+  const particleMaterial = new THREE.PointsMaterial({
+    color: 0xffffff, // Particle color
+    size: 0.1, // Particle size
+  });
+
+  // Create particle system
+  const particleSystem = new THREE.Points(particles, particleMaterial);
+  scene.add(particleSystem);
+  particleSystem.name = 'particleSystem';
+  particleSystem.position.set(0, 10, 0);
+  return particleSystem;
 };
 
 const addMouseInteraction = (canvas, object, camera) => {
@@ -327,6 +595,10 @@ const animate = (scene, camera, renderer, cube, x, y, z) => {
     //   cube.position.y += offsetY;
 
     //   time += 1; // Increment time for animation
+    // }
+
+    // if (cube?.name == 'particleSystem') {
+    //   cube.rotation.y += 0.01;
     // }
 
     requestAnimationFrame(animateLoop);
