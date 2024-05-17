@@ -4,102 +4,192 @@ const main = async () => {
   // create Scene
   const scene = new THREE.Scene();
 
+  // movement variables
+  const keyState = {
+    moveForward: false,
+    moveBackward: false,
+    rotateLeft: false,
+    rotateRight: false,
+  };
+
+  // camera ball
+  const ball = await windowSphere(scene, false, 3, 32, 32, 0xff0000, 0, 5, 0);
+
   // Set up camera
-  const camera = await windowCamera();
+  const camera = await windowCamera(ball);
 
   // Set up renderer
   const renderer = await windowRenderer();
 
-  //group
-  const group = new THREE.Group();
-  const lampGroup = new THREE.Group();
-
   // Add cube to the scene
-  // const cube = await windowBox(scene, 2, 2, 2, 0x000000, 0, 0, 0);
-  const footPath = await windowBox(scene, 50, 5, 500, 0x1a1a1a, 0, 0, -100);
+  const footPath = await windowBox(scene, 50, 5, 500, 0x1a1a1a, 0, 0, -100, 0);
+  const floor = await windowPlane(scene, 0x86592d, 500, 500, 0, 0, -100, 2);
+  const roomFloor = await windowPlane(scene, 0x808080, 500, 500, 0, 0, -650, 2);
 
-  const wall = await windowBox(scene, 500, 100, 10, 0xb3b3cc, 0, 45, -390);
-  // const axeShape = new THREE.Shape();
-  // axeShape.moveTo(0, 20, -300);
-  // axeShape.lineTo(7, 20, -300);
-  // axeShape.lineTo(7, 30, -300);
-  // axeShape.lineTo(13, 30, -300);
-  // axeShape.lineTo(13, 20, -300);
-  // axeShape.lineTo(20, 20, -300);
-  // axeShape.lineTo(20, 40, -300);
-  // axeShape.lineTo(0, 40, -300);
-  // // axeShape.lineTo(10, 10, -300);
-  // // axeShape.lineTo(10, 10, -300);
-  // // axeShape.lineTo(10, -10, -300);
-  // // axeShape.lineTo(-10, -10, -300);
-  // scene.add(
-  //   new THREE.Mesh(
-  //     new THREE.ShapeGeometry(axeShape),
-  //     new THREE.MeshBasicMaterial({ color: 0xff0000 })
-  //   )
-  // );
-
-  // Define a shape using points
-  const shapePoints = [
-    new THREE.Vector2(0, 20), // Start point
-    new THREE.Vector2(7, 20), // Second point
-    new THREE.Vector2(7, 30), // Third point
-    new THREE.Vector2(13, 30), // Fourth point
-    new THREE.Vector2(13, 20), // Fifth point
-    new THREE.Vector2(20, 20), // 6 point
-    new THREE.Vector2(20, 40), // 7 point
-    new THREE.Vector2(0, 40), // 8 point
+  // Walls
+  const roomBox = new THREE.Group();
+  const wallShapePoints = [
+    new THREE.Vector2(-250, 0), // Start point
+    new THREE.Vector2(-25, 0), // Second point
+    new THREE.Vector2(-25, 50), // Third point
+    new THREE.Vector2(25, 50), // Fourth point
+    new THREE.Vector2(25, 0), // Fifth point
+    new THREE.Vector2(250, 0), // 6 point
+    new THREE.Vector2(250, 100), // 7 point
+    new THREE.Vector2(-250, 100), // 8 point
   ];
-  // Create a shape from the points
-  const shape = new THREE.Shape(shapePoints);
+  const sideWallShapePoints = [
+    new THREE.Vector3(-250, 0), // Fifth point
+    new THREE.Vector3(250, 0), // 6 point
+    new THREE.Vector3(250, 100), // 7 point
+    new THREE.Vector3(-250, 100), // 8 point
+  ];
 
-  // Define settings for extrusion
-  const extrudeSettings = {
-    depth: 1, // Depth of extrusion
-    bevelEnabled: false, // Disable bevel
-  };
-
-  // Create a geometry by extruding the shape
-  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-  // Create a material
-  const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-
-  // Create a mesh using the geometry and material
-  const mesh = new THREE.Mesh(geometry, material);
-
-  // Add the mesh to the scene
-  scene.add(mesh);
-
-  // const cubeBorder = await windowBoxBorder(
-  //   scene,
-  //   2.2,
-  //   2.2,
-  //   2.2,
-  //   0xff0000,
-  //   0,
-  //   0,
-  //   0
-  // );
-  // const torus = await windowTorus(scene, 100, 0x000000, 0, 1, 1);
-  // const torus2 = await windowTorus(scene, 3, 0x000000, 0, 1, 1);
-  // const circle = await windowSphere(scene, 1, 10, 10, 0x000000, 0, 0, 0);
-  const circle = await windowSphere(
-    scene,
-    false,
-    3,
-    32,
-    32,
-    0xff00ff,
-    -10,
+  const wallShape = await windowShape(
+    roomBox,
+    0x595959,
+    wallShapePoints,
     5,
-    -10
+    0,
+    0,
+    -400,
+    0
   );
-  circle.name = 'circle';
-  // const circle2 = await windowSphere(scene, 0.5, 32, 32, 0x00ffff, 4, 10, 2);
+  const lSideWallShape = await windowShape(
+    roomBox,
+    0x595959,
+    sideWallShapePoints,
+    5,
+    -250,
+    0,
+    -650,
+    2
+  );
+  const rSideWallShape = await windowShape(
+    roomBox,
+    0x595959,
+    sideWallShapePoints,
+    5,
+    250,
+    0,
+    -650,
+    2
+  );
+  const bSideWallShape = await windowShape(
+    roomBox,
+    0x595959,
+    sideWallShapePoints,
+    5,
+    0,
+    0,
+    -900,
+    0
+  );
+  scene.add(roomBox);
+
+  // door
+  const doorGroup = new THREE.Group();
+  const doorShapePoints = [
+    new THREE.Vector2(-24, 0), // Start point
+    new THREE.Vector2(0, 0), // Second point
+    new THREE.Vector2(0, 50), // Third point
+    new THREE.Vector2(0, 0), // Fourth point
+    new THREE.Vector2(24, 0), // Fifth point
+    new THREE.Vector2(24, 50), // 6 point
+    new THREE.Vector2(-24, 50), // 7 point
+    // new THREE.Vector2(-250, 100), // 8 point
+  ];
+
+  const doorShape = await windowShape(
+    doorGroup,
+    0xac7339,
+    doorShapePoints,
+    5,
+    0,
+    0,
+    -400,
+    0
+  );
+  doorShape.name = 'door';
+  doorShape.degreeCount = 0;
+
+  const doorRBorder = await windowCylinder(
+    doorGroup,
+    5,
+    5,
+    50,
+    10,
+    10,
+    false,
+    0x000000,
+    30,
+    25,
+    -390,
+    0,
+    0,
+    0
+  );
+  const doorLBorder = await windowCylinder(
+    doorGroup,
+    5,
+    5,
+    50,
+    10,
+    10,
+    false,
+    0x000000,
+    -30,
+    25,
+    -390,
+    0,
+    0,
+    0,
+    0
+  );
+  const doorUBorder = await windowCylinder(
+    doorGroup,
+    5,
+    5,
+    70,
+    10,
+    10,
+    false,
+    0x000000,
+    0,
+    55,
+    -390,
+    0,
+    0,
+    2
+  );
+  const doorDBorder = await windowCylinder(
+    doorGroup,
+    5,
+    5,
+    58,
+    10,
+    10,
+    false,
+    0x000000,
+    0,
+    0,
+    -390,
+    0,
+    0,
+    2
+  );
+  scene.add(doorGroup);
+
+  // Add ambient light to illuminate the scene
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
+
+  //streetLight
+  const streetLightBasic = new THREE.Group();
+  const streetLight = new THREE.Group();
   const lightSource = await windowSphere(
     scene,
-    group,
+    streetLightBasic,
     1.3,
     32,
     32,
@@ -108,15 +198,27 @@ const main = async () => {
     21,
     0
   );
-  // const particle = await windowPartial(scene);
-
-  const circle2 = await windowCircle(scene, group, 0x808000, 2, 32, 0, 25, 0);
-  const floor = await windowPlane(scene, 0x808080, 500, 500, 0, 0, -100, 2);
-  // const floor2 = await windowPlane(scene, 0x808000, 100, 100, 0, 0, -30, 1);
-  const spotLight = await windowSpotLight(scene, group, 0xffffff, 0, 20, 0);
-  const cylinder = await windowCylinder(
-    scene,
-    group,
+  const lightSourceClosedUpside = await windowCircle(
+    streetLightBasic,
+    0x808000,
+    2,
+    32,
+    Math.PI * 2,
+    2,
+    0,
+    25,
+    0
+  );
+  const spotLight = await windowSpotLight(
+    streetLightBasic,
+    0xffffff,
+    3,
+    0,
+    20,
+    0
+  );
+  const lightSourceCover = await windowCylinder(
+    streetLightBasic,
     2,
     3,
     5,
@@ -127,11 +229,12 @@ const main = async () => {
     0,
     22.5,
     0,
+    0,
+    0,
     0
   );
-  const cylinder2 = await windowCylinder(
-    scene,
-    group,
+  const lightSourceHead = await windowCylinder(
+    streetLightBasic,
     0.5,
     0.5,
     3,
@@ -142,11 +245,12 @@ const main = async () => {
     0,
     26.5,
     0,
+    0,
+    0,
     0
   );
-  const cylinder4 = await windowCylinder(
-    scene,
-    group,
+  const lightSourceSupport = await windowCylinder(
+    streetLightBasic,
     1,
     1,
     30,
@@ -157,11 +261,12 @@ const main = async () => {
     10,
     15,
     0,
+    0,
+    0,
     0
   );
-  const cylinder3 = await windowCylinder(
-    scene,
-    group,
+  const lightSourceSupportMain = await windowCylinder(
+    streetLight,
     0.5,
     0.5,
     10,
@@ -172,12 +277,118 @@ const main = async () => {
     5,
     26.5,
     0,
+    0,
+    0,
     2
   );
-  // console.log(spotLight, 'spotLight');
-  // Add ambient light to illuminate the scene
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
+  streetLight.add(streetLightBasic);
+
+  // multiply the streetLight with multiple streetLights
+  const streetsLight = new THREE.Group();
+  const multipleStreetsLights = await multipleStreetLights(
+    streetLight,
+    streetsLight,
+    -2,
+    6
+  );
+  multipleStreetsLights.position.set(5, 0, 0);
+  scene.add(streetsLight);
+
+  const globalLight = await windowSpotLight(
+    scene,
+    0xffffff,
+    0.1,
+    400,
+    100,
+    200
+  );
+  scene.add(globalLight);
+  const spotLightHelper = new THREE.SpotLightHelper(globalLight);
+  scene.add(spotLightHelper);
+
+  // tree
+  const tree = new THREE.Group();
+  const treeLeaf = new THREE.Group();
+  const ball1 = await windowSphere(
+    treeLeaf,
+    false,
+    15,
+    32,
+    32,
+    0x00ff00,
+    0,
+    25,
+    0
+  );
+  const ball2 = await windowSphere(
+    treeLeaf,
+    false,
+    15,
+    32,
+    32,
+    0x00ff00,
+    7.5,
+    20,
+    0
+  );
+  const ball3 = await windowSphere(
+    treeLeaf,
+    false,
+    15,
+    32,
+    32,
+    0x00ff00,
+    -7.5,
+    20,
+    0
+  );
+  const ball4 = await windowSphere(
+    treeLeaf,
+    false,
+    15,
+    32,
+    32,
+    0x00ff00,
+    0,
+    20,
+    7.5
+  );
+  const ball5 = await windowSphere(
+    treeLeaf,
+    false,
+    15,
+    32,
+    32,
+    0x00ff00,
+    0,
+    20,
+    -7.5
+  );
+  tree.add(treeLeaf);
+
+  const treeRoot = await windowCylinder(
+    tree,
+    4,
+    4,
+    40,
+    10,
+    1,
+    false,
+    0x8b4513,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  );
+  // scene.add(tree);
+
+  const trees = new THREE.Group();
+  // const multipletres = await multipleTree(tree, trees, 10);
+  scene.add(trees);
+
+  // // Text writing
   // const text = await windowText(
   //   scene,
   //   'Welcome to My World',
@@ -188,85 +399,32 @@ const main = async () => {
   // );
   // console.log(text, 'text');
 
-  // Add the group to the scene
+  // Add the streetLight to the scene
 
-  scene.add(group);
+  // Add mouse interaction for rotating the torus
+  // addMouseInteraction(renderer.domElement, scene, camera);
 
-  const streetLight = group.clone();
-  console.log(streetLight, 'streetLight');
-  streetLight.position.set(0, 0, -60);
-  scene.add(streetLight);
-  streetLight.children[2].target.position.copy(streetLight.position); // Set the target of the spotlight to a point below the scene
-  scene.add(streetLight.children[2].target);
-  // 0
-  const streetLight0 = group.clone();
-  streetLight0.position.set(0, 0, 60);
-  scene.add(streetLight0);
-  streetLight0.children[2].target.position.copy(streetLight0.position); // Set the target of the spotlight to a point below the scene
-  scene.add(streetLight0.children[2].target);
-  // -1
-  const streetLightm1 = group.clone();
-  streetLightm1.position.set(0, 0, 120);
-  scene.add(streetLightm1);
-  streetLightm1.children[2].target.position.copy(streetLightm1.position); // Set the target of the spotlight to a point below the scene
-  scene.add(streetLightm1.children[2].target);
-
-  // 2
-  const streetLight2 = group.clone();
-  streetLight2.position.set(0, 0, -120);
-  scene.add(streetLight2);
-  streetLight2.children[2].target.position.copy(streetLight2.position); // Set the target of the spotlight to a point below the scene
-  scene.add(streetLight2.children[2].target);
-
-  // 3
-  const streetLight3 = group.clone();
-  streetLight3.position.set(0, 0, -180);
-  scene.add(streetLight3);
-  streetLight3.children[2].target.position.copy(streetLight3.position); // Set the target of the spotlight to a point below the scene
-  scene.add(streetLight3.children[2].target);
-
-  // 4
-  const streetLight4 = group.clone();
-  streetLight4.position.set(0, 0, -240);
-  scene.add(streetLight4);
-  streetLight4.children[2].target.position.copy(streetLight4.position); // Set the target of the spotlight to a point below the scene
-  scene.add(streetLight4.children[2].target);
-
-  // const spotLightHelpe = new THREE.SpotLightHelper(streetLight.children[]);
-  // scene.add(spotLightHelpe);
-  // console.log(streetLight, 'streetLight');
-  // group.position.set(5, 0, 0);
-  // group.rotation.z = 0.5;
-  // group.rotation.x = 1.3;
-  // Update the spotlight position relative to the group's world position
-  // spotLight.position.copy(group.localToWorld(new THREE.Vector3(20, 0, 0)));
-
-  // // Add mouse interaction for rotating the torus
-  // addMouseInteraction(renderer.domElement, torus);
-  // addMouseInteraction(renderer.domElement, cube);
-  // addMouseInteraction(renderer.domElement, cubeBorder)
-  addMouseInteraction(renderer.domElement, group, camera);
+  // Event listeners for keyboard controls
+  document.addEventListener(
+    'keydown',
+    (event) => onDocumentKeyDown(event, keyState),
+    false
+  );
+  document.addEventListener(
+    'keyup',
+    (event) => onDocumentKeyUp(event, keyState),
+    false
+  );
 
   // scene.fog = new THREE.Fog(0xcccccc, 1, 500);
   renderer.shadowMap.enabled = true;
 
   // Start the animation loop
-  // animate(scene, camera, renderer, cube);
-  // animate(scene, camera, renderer, cubeBorder);
-  // animate(scene, camera, renderer, torus, 0, 0, 0.05);
-  // animate(scene, camera, renderer, torus2, 0, 0, 0.05);
-  // animate(scene, camera, renderer, circle, 0.01, 0.01, 0.01);
-  // animate(scene, camera, renderer, text, 0, 0, 0);
-  // animate(scene, camera, renderer, building, 0, 0, 0);
-  animate(scene, camera, renderer, circle, 0.0, 0.01, 0.0);
-  // animate(scene, camera, renderer, particle, 0.0, 0.0, 0.0);
-  // animate(scene, camera, renderer, circle2, 0.01, 0.0, 0.0);
-  // animate(scene, camera, renderer, building, 0.0, -0.01, 0.0);
-  // animate(scene, camera, renderer, floor, 0.0, 0.0, 0.01);
-  // animate(scene, camera, renderer, group, 0.0, 0.01, 0.0);
+  animate(scene, camera, renderer, ball, {}, keyState, 0.0, 0.0, 0.0);
+  animate(scene, camera, renderer, doorShape, ball, {}, 0.0, 0.0, 0.0);
 };
 
-const windowCamera = async () => {
+const windowCamera = async (ball) => {
   // create Camera for viewing the scene
   const camera = new THREE.PerspectiveCamera(
     75, // angle of view (FOV) in degree (0 ~ 180)
@@ -276,8 +434,43 @@ const windowCamera = async () => {
   );
 
   camera.position.set(0, 10, 40); // camera position
+  ball.add(camera);
 
   return camera;
+};
+
+const onDocumentKeyDown = (event, keyState) => {
+  switch (event.code) {
+    case 'ArrowUp':
+      keyState.moveForward = true;
+      break;
+    case 'ArrowDown':
+      keyState.moveBackward = true;
+      break;
+    case 'ArrowLeft':
+      keyState.rotateLeft = true;
+      break;
+    case 'ArrowRight':
+      keyState.rotateRight = true;
+      break;
+  }
+};
+
+const onDocumentKeyUp = (event, keyState) => {
+  switch (event.code) {
+    case 'ArrowUp':
+      keyState.moveForward = false;
+      break;
+    case 'ArrowDown':
+      keyState.moveBackward = false;
+      break;
+    case 'ArrowLeft':
+      keyState.rotateLeft = false;
+      break;
+    case 'ArrowRight':
+      keyState.rotateRight = false;
+      break;
+  }
 };
 
 const windowRenderer = async () => {
@@ -288,13 +481,14 @@ const windowRenderer = async () => {
   return renderer;
 };
 
-const windowBox = async (scene, x, y, z, color, px, py, pz) => {
+const windowBox = async (scene, x, y, z, color, px, py, pz, rotation) => {
   const geometry = new THREE.BoxGeometry(x, y, z); // create a cube geometry
   const material = new THREE.MeshStandardMaterial({ color }); // create a material for the cube geometry
 
   const cube = new THREE.Mesh(geometry, material); // create a mesh from the cube geometry and the material
   cube.castShadow = true; // Enable shadow casting for the cube
   cube.receiveShadow = true; // Enable shadow receiving for the cube
+  cube.rotation.y = rotation == 0 ? 0 : -Math.PI / rotation;
 
   scene.add(cube); // add the cube mesh to the scene
 
@@ -332,7 +526,7 @@ const windowTorus = async (scene, angle, color, px, py, pz) => {
 
 const windowSphere = async (
   scene,
-  group,
+  streetLight,
   radius,
   width,
   height,
@@ -347,11 +541,11 @@ const windowSphere = async (
   sphere.position.set(px, py, pz);
   sphere.castShadow = true;
   sphere.receiveShadow = true;
-  if (group) {
+  if (streetLight) {
     sphere.material.color.r = 1.6;
     sphere.material.color.g = 1.6;
     sphere.material.color.b = 1.6;
-    group.add(sphere);
+    streetLight.add(sphere);
   } else {
     scene.add(sphere);
   }
@@ -402,14 +596,14 @@ const windowPlane = async (scene, color, x, y, px, py, pz, rotation) => {
   return floor;
 };
 
-const windowSpotLight = async (scene, group, color, px, py, pz) => {
+const windowSpotLight = async (scene, color, density, px, py, pz) => {
   // Create a spotlight
-  const spotLight = new THREE.SpotLight(color, 3); // White light
+  const spotLight = new THREE.SpotLight(color, density); // White light
   spotLight.position.set(px, py, pz); // Position the light
   spotLight.castShadow = true; // Enable shadow casting
   spotLight.penumbra = 0.15;
-  spotLight.target.position.set(0, -10, 0); // Set the target of the spotlight to a point below the scene
-  group.add(spotLight);
+  // spotLight.target.position.set(0, -10, 0); // Set the target of the spotlight to a point below the scene
+  scene.add(spotLight);
 
   // spotLight.target.updateMatrixWorld(); // Update the target's matrix world to reflect its position
   // spotLight.target.updateWorldMatrix(true, false); // Update the world matrix of the target
@@ -418,14 +612,57 @@ const windowSpotLight = async (scene, group, color, px, py, pz) => {
   // Create a line to visualize spotlight direction
   // const spotLightHelper = new THREE.SpotLightHelper(spotLight);
   // scene.add(spotLightHelper);
-  // group.add(light.target);
+  // streetLight.add(light.target);
 
   return spotLight;
 };
 
+const multipleStreetLights = async (basicScene, mainScene, min, max) => {
+  for (let i = min; i < max; i++) {
+    const streetLightClone = basicScene.clone();
+    streetLightClone.position.set(0, 0, -i * 60);
+    mainScene.add(streetLightClone);
+
+    // Set the target of the spotlight to a point below the mainScene
+    const target = new THREE.Object3D();
+    target.position.copy(streetLightClone.position);
+    streetLightClone.children[1].children[2].target = target;
+    mainScene.add(target);
+  }
+
+  return mainScene;
+};
+
+// const multipleTree = async (basicScene, mainScene, max) => {
+//   const positions = [];
+//   for (let i = 0; i < max; i++) {
+//     const treeClone = basicScene.clone();
+//     const { x, y, z } = await generatePosition(
+//       { max: -40, min: -210 },
+//       { max: 40, min: -300 },
+//       20
+//     );
+//     positions.push({ x, y, z });
+//     for (let j = 0; j < positions.length; j++) {
+//       console.log(treeClone.position.distanceTo(positions[j]));
+//       // treeClone.position.distanceTo(positions[j]);
+//       if (treeClone.position.distanceTo(positions[j]) >= 20) {
+//         treeClone.position.set(x, y, z);
+//         mainScene.add(treeClone);
+//       }
+//     }
+//   }
+//   return mainScene;
+// };
+
+const generatePosition = async (xRange, zRange, yPosition) => {
+  const x = Math.random() * (xRange.max - xRange.min) + xRange.min;
+  const z = Math.random() * (zRange.max - zRange.min) + zRange.min;
+  return { x, y: yPosition, z };
+};
+
 const windowCylinder = async (
   scene,
-  group,
   radiusTop,
   radiusBottom,
   height,
@@ -436,7 +673,9 @@ const windowCylinder = async (
   px,
   py,
   pz,
-  rotation
+  rotationX,
+  rotationY,
+  rotationZ
 ) => {
   const geometry = new THREE.CylinderGeometry(
     radiusTop,
@@ -448,11 +687,13 @@ const windowCylinder = async (
   );
   const material = new THREE.MeshStandardMaterial({ color });
   const cylinder = new THREE.Mesh(geometry, material);
-  group.add(cylinder);
+  scene.add(cylinder);
   cylinder.position.set(px, py, pz);
   cylinder.castShadow = true;
   cylinder.receiveShadow = true;
-  cylinder.rotation.z = rotation == 0 ? 0 : -Math.PI / rotation;
+  cylinder.rotation.x = rotationX == 0 ? 0 : -Math.PI / rotationX;
+  cylinder.rotation.y = rotationY == 0 ? 0 : -Math.PI / rotationY;
+  cylinder.rotation.z = rotationZ == 0 ? 0 : -Math.PI / rotationZ;
   // cylinder.rotation.y = rotation == 0 ? 0 : -Math.PI / rotation;
 
   // Set rotation of the cylinder
@@ -465,20 +706,21 @@ const windowCylinder = async (
 
 const windowCircle = async (
   scene,
-  group,
   color,
   radius,
   segments,
+  thetaLength,
+  rotation,
   px,
   py,
   pz
 ) => {
-  const geometry = new THREE.CircleGeometry(radius, segments);
+  const geometry = new THREE.CircleGeometry(radius, segments, 0, thetaLength);
   const material = new THREE.MeshBasicMaterial({ color });
   const circle = new THREE.Mesh(geometry, material);
   circle.position.set(px, py, pz);
-  circle.rotation.x = -Math.PI / 2;
-  group.add(circle);
+  circle.rotation.x = rotation == 0 ? 0 : -Math.PI / rotation;
+  scene.add(circle);
 
   return circle;
 };
@@ -511,6 +753,45 @@ const windowPartial = async (scene) => {
   particleSystem.name = 'particleSystem';
   particleSystem.position.set(0, 10, 0);
   return particleSystem;
+};
+
+const windowShape = async (
+  scene,
+  color,
+  shapePoints,
+  depth,
+  px,
+  py,
+  pz,
+  rotation
+) => {
+  // Create a shape from the points
+  const shape = new THREE.Shape(shapePoints);
+
+  // Define settings for extrusion
+  const extrudeSettings = {
+    depth, // Depth of extrusion
+    bevelEnabled: true, // Disable bevel
+    bevelThickness: 1,
+    bevelSize: 1,
+    bevelOffset: 0,
+    bevelSegments: 1,
+  };
+
+  // Create a geometry by extruding the shape
+  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+  // Create a material
+  const material = new THREE.MeshStandardMaterial({ color });
+
+  // Create a mesh using the geometry and material
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(px, py, pz);
+  mesh.rotation.y = rotation == 0 ? 0 : -Math.PI / rotation;
+  // Add the mesh to the scene
+  scene.add(mesh);
+
+  return mesh;
 };
 
 const addMouseInteraction = (canvas, object, camera) => {
@@ -566,40 +847,56 @@ const addMouseInteraction = (canvas, object, camera) => {
   canvas.addEventListener('wheel', onMouseWheel);
 };
 
-const animate = (scene, camera, renderer, cube, x, y, z) => {
+const animate = (scene, camera, renderer, cube, cube2, key, x, y, z) => {
   let animationCount = 0;
   // Define the animation loop function
   let time = 0;
   const animateLoop = () => {
-    if (animationCount >= 300) {
-      // Check if the animation loop has run 10 times
-      return; // Exit the animation loop if the limit is reached
+    // if (animationCount >= 300) {
+    //   // Check if the animation loop has run 10 times
+    //   return; // Exit the animation loop if the limit is reached
+    // }
+
+    // Calculate the distance between the cube and the camera
+    let distance;
+    if (cube?.name == 'door' && cube2?.position) {
+      distance = cube?.position?.distanceTo(cube2?.position);
+      // Door rotation
+      if (cube?.degreeCount < 90 && cube?.degreeCount >= 0 && distance <= 150) {
+        // Rotate the door by 1 degree around its pivot point
+        cube.rotation.x += Math.PI / 180; // Rotate by 1 degree
+        cube.degreeCount += 1;
+      } else if (
+        cube?.degreeCount <= 90 &&
+        cube?.degreeCount > 0 &&
+        distance > 150
+      ) {
+        // Rotate the door by 1 degree around its pivot point
+        cube.rotation.x -= Math.PI / 180; // Rotate by 1 degree
+        cube.degreeCount -= 1;
+      }
     }
-    // else if (animationCount >= 100 && animationCount <= 200) {
-    //   cube.visible = true;
-    //   // camera.position.x -= 0.1;
-    //   if (cube?.name == 'circle') {
-    //     cube.position.y += 0.1;
-    //     console.log(cube.position.y, 'cube.position.y');
-    //   }
-    // } else if (animationCount > 200) {
-    //   if (cube?.name == 'circle') {
-    //     cube.position.y -= 0.1;
-    //   }
-    // }
-    // if (cube?.name == 'circle') {
-    //   // Update ball position
-    //   const amplitude = 2; // Amplitude of the motion
-    //   const frequency = 0.1; // Frequency of the motion
-    //   const offsetY = amplitude * Math.sin(time * frequency); // Calculate offset in y-direction
-    //   cube.position.y += offsetY;
 
-    //   time += 1; // Increment time for animation
-    // }
+    // key movement animation
+    // Movement speed and rotation speed
+    const moveSpeed = 1;
+    const rotateSpeed = 0.04;
 
-    // if (cube?.name == 'particleSystem') {
-    //   cube.rotation.y += 0.01;
-    // }
+    // Move ball
+    if (key?.moveForward) {
+      cube.translateZ(-moveSpeed);
+    }
+    if (key?.moveBackward) {
+      cube.translateZ(moveSpeed);
+    }
+
+    // Rotate cube
+    if (key?.rotateLeft) {
+      cube.rotation.y += rotateSpeed;
+    }
+    if (key?.rotateRight) {
+      cube.rotation.y -= rotateSpeed;
+    }
 
     requestAnimationFrame(animateLoop);
 
@@ -609,14 +906,6 @@ const animate = (scene, camera, renderer, cube, x, y, z) => {
       cube.rotation.y += y;
       cube.rotation.z += z;
     }
-
-    const range = camera.position.z - cube?.position?.z;
-
-    // camera.position.z -= 0.1;
-
-    // if (camera.position.z < ) {
-    //   cube.visible = true;
-    // }
 
     // Render the scene with the updated camera and cube positions
     renderer.render(scene, camera);
