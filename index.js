@@ -1,8 +1,14 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.module.js';
 
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js';
+
 const main = async () => {
   // create Scene
   const scene = new THREE.Scene();
+
+  // Cannon.js world
+  const world = new CANNON.World();
+  world.gravity.set(0, -9.82, 0); // Gravity pulls things down
 
   // movement variables
   const keyState = {
@@ -13,7 +19,18 @@ const main = async () => {
   };
 
   // camera ball
-  const ball = await windowSphere(scene, false, 3, 32, 32, 0xff0000, 0, 5, 0);
+  const ball = await windowSphere(
+    scene,
+    'standard',
+    false,
+    3,
+    32,
+    32,
+    0xff0000,
+    0,
+    5,
+    0
+  );
 
   // Set up camera
   const camera = await windowCamera(ball);
@@ -21,9 +38,19 @@ const main = async () => {
   // Set up renderer
   const renderer = await windowRenderer();
 
+  // Create a floor in Cannon.js
+  const floorShape = new CANNON.Plane();
+  const floorBody = new CANNON.Body({ mass: 0 });
+  floorBody.addShape(floorShape);
+  floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+  // Set the position of the body
+  floorBody.position.set(0, -100, 0);
+  world.addBody(floorBody);
+
   // Add cube to the scene
   const footPath = await windowBox(scene, 50, 5, 500, 0x1a1a1a, 0, 0, -100, 0);
   const floor = await windowPlane(scene, 0x86592d, 500, 500, 0, 0, -100, 2);
+
   const roomFloor = await windowPlane(scene, 0x808080, 500, 500, 0, 0, -650, 2);
 
   // Walls
@@ -181,23 +208,25 @@ const main = async () => {
   scene.add(doorGroup);
 
   // Add ambient light to illuminate the scene
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
   scene.add(ambientLight);
 
   //streetLight
   const streetLightBasic = new THREE.Group();
   const streetLight = new THREE.Group();
-  const lightSource = await windowSphere(
-    scene,
-    streetLightBasic,
-    1.3,
-    32,
-    32,
-    0xffffff,
-    0,
-    21,
-    0
-  );
+  // const lightSource = await windowSphere(
+  //   scene,
+  //   'standard',
+  //   streetLightBasic,
+  //   1.3,
+  //   32,
+  //   32,
+  //   0xffffff,
+  //   0,
+  //   21,
+  //   0
+  // );
+  const lightSource = await windowGlow(streetLightBasic, 0, 21, 0, 1.3, 32, 32);
   const lightSourceClosedUpside = await windowCircle(
     streetLightBasic,
     0x808000,
@@ -303,14 +332,15 @@ const main = async () => {
     200
   );
   scene.add(globalLight);
-  const spotLightHelper = new THREE.SpotLightHelper(globalLight);
-  scene.add(spotLightHelper);
+  // const spotLightHelper = new THREE.SpotLightHelper(globalLight);
+  // scene.add(spotLightHelper);
 
   // tree
   const tree = new THREE.Group();
   const treeLeaf = new THREE.Group();
   const ball1 = await windowSphere(
     treeLeaf,
+    'standard',
     false,
     15,
     32,
@@ -322,6 +352,7 @@ const main = async () => {
   );
   const ball2 = await windowSphere(
     treeLeaf,
+    'standard',
     false,
     15,
     32,
@@ -333,6 +364,7 @@ const main = async () => {
   );
   const ball3 = await windowSphere(
     treeLeaf,
+    'standard',
     false,
     15,
     32,
@@ -344,6 +376,7 @@ const main = async () => {
   );
   const ball4 = await windowSphere(
     treeLeaf,
+    'standard',
     false,
     15,
     32,
@@ -355,6 +388,7 @@ const main = async () => {
   );
   const ball5 = await windowSphere(
     treeLeaf,
+    'standard',
     false,
     15,
     32,
@@ -385,8 +419,43 @@ const main = async () => {
   // scene.add(tree);
 
   const trees = new THREE.Group();
-  // const multipletres = await multipleTree(tree, trees, 10);
+  const rangeForTreesL = {
+    maxX: -40,
+    minX: -240,
+    maxZ: 120,
+    minZ: -340,
+  };
+  const multipleTreesL = await multipleTree(tree, trees, 5, rangeForTreesL);
+  const rangeForTreesR = {
+    maxX: 40,
+    minX: 240,
+    maxZ: 120,
+    minZ: -340,
+  };
+  const multipleTreesR = await multipleTree(tree, trees, 5, rangeForTreesR);
   scene.add(trees);
+
+  //Moon
+  const moon = await windowGlow(scene, 0, 0, 0, 15, 32, 32);
+  moon.position.set(400, 100, 200);
+  scene.add(moon);
+
+  // Room light
+  const roomLight = await windowSpotLight(scene, 0xffffff, 1, 0, 20, -410);
+  const roomLightTarget = new THREE.Object3D();
+  roomLightTarget.position.set(0, 0, -400);
+  roomLight.target = roomLightTarget;
+  scene.add(roomLightTarget);
+
+  const ball22 = await windowGlow(scene, 0, 50, -20, 3, 32, 32);
+  ball22.name = 'ball22';
+
+  // Cannon.js sphere
+  const shape = new CANNON.Sphere(3);
+  const body = new CANNON.Body({ mass: 1 });
+  body.addShape(shape);
+  body.position.copy(ball22.position);
+  world.addBody(body);
 
   // // Text writing
   // const text = await windowText(
@@ -420,8 +489,34 @@ const main = async () => {
   renderer.shadowMap.enabled = true;
 
   // Start the animation loop
-  animate(scene, camera, renderer, ball, {}, keyState, 0.0, 0.0, 0.0);
-  animate(scene, camera, renderer, doorShape, ball, {}, 0.0, 0.0, 0.0);
+  animate(
+    scene,
+    world,
+    camera,
+    renderer,
+    ball,
+    false,
+    {},
+    keyState,
+    0.0,
+    0.0,
+    0.0
+  );
+  animate(
+    scene,
+    world,
+    camera,
+    renderer,
+    doorShape,
+    false,
+    ball,
+    {},
+    0.0,
+    0.0,
+    0.0
+  );
+  // animate(scene, camera, renderer, glowBall, {}, {}, 0.1, 0.1, 0.05);
+  animate(scene, world, camera, renderer, ball22, body, {}, {}, 0, 0, 0.0);
 };
 
 const windowCamera = async (ball) => {
@@ -526,6 +621,7 @@ const windowTorus = async (scene, angle, color, px, py, pz) => {
 
 const windowSphere = async (
   scene,
+  materials,
   streetLight,
   radius,
   width,
@@ -536,7 +632,10 @@ const windowSphere = async (
   pz
 ) => {
   const geometry = new THREE.SphereGeometry(radius, width, height);
-  const material = new THREE.MeshStandardMaterial({ color });
+  const material =
+    materials == 'standard'
+      ? new THREE.MeshStandardMaterial({ color })
+      : new THREE.MeshBasicMaterial({ color });
   const sphere = new THREE.Mesh(geometry, material);
   sphere.position.set(px, py, pz);
   sphere.castShadow = true;
@@ -633,27 +732,53 @@ const multipleStreetLights = async (basicScene, mainScene, min, max) => {
   return mainScene;
 };
 
-// const multipleTree = async (basicScene, mainScene, max) => {
-//   const positions = [];
-//   for (let i = 0; i < max; i++) {
-//     const treeClone = basicScene.clone();
-//     const { x, y, z } = await generatePosition(
-//       { max: -40, min: -210 },
-//       { max: 40, min: -300 },
-//       20
-//     );
-//     positions.push({ x, y, z });
-//     for (let j = 0; j < positions.length; j++) {
-//       console.log(treeClone.position.distanceTo(positions[j]));
-//       // treeClone.position.distanceTo(positions[j]);
-//       if (treeClone.position.distanceTo(positions[j]) >= 20) {
-//         treeClone.position.set(x, y, z);
-//         mainScene.add(treeClone);
-//       }
-//     }
-//   }
-//   return mainScene;
-// };
+const multipleTree = async (basicScene, mainScene, max, range) => {
+  const positions = [];
+  let i = 0;
+  while (i < max) {
+    const treeClone = basicScene.clone();
+    const { x, y, z } = await generatePosition(
+      { max: range.maxX, min: range.minX },
+      { max: range.maxZ, min: range.minZ },
+      20
+    );
+
+    treeClone.position.set(x, y, z);
+    let canAdd = true;
+    for (let j = 0; j < positions.length; j++) {
+      const distance = treeClone.position.distanceTo(positions[j]);
+
+      if (distance < 20) {
+        canAdd = false;
+        break;
+      }
+    }
+
+    if (canAdd) {
+      positions.push({ x, y, z });
+      mainScene.add(treeClone);
+      i++; // Increment only if tree is added
+    }
+  }
+  // for (let i = 0; i < max; i++) {
+  //   const treeClone = basicScene.clone();
+  //   const { x, y, z } = await generatePosition(
+  //     { max: -40, min: -210 },
+  //     { max: 40, min: -300 },
+  //     20
+  //   );
+  //   positions.push({ x, y, z });
+  //   for (let j = 0; j < positions.length; j++) {
+  //     console.log(treeClone.position.distanceTo(positions[j]));
+  //     // treeClone.position.distanceTo(positions[j]);
+  //     if (treeClone.position.distanceTo(positions[j]) >= 20) {
+  //       treeClone.position.set(x, y, z);
+  //       mainScene.add(treeClone);
+  //     }
+  //   }
+  // }
+  return mainScene;
+};
 
 const generatePosition = async (xRange, zRange, yPosition) => {
   const x = Math.random() * (xRange.max - xRange.min) + xRange.min;
@@ -794,6 +919,44 @@ const windowShape = async (
   return mesh;
 };
 
+const windowGlow = async (scene, px, py, pz, radius, height, width) => {
+  // Vertex Shader
+  const vertexShader = `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+
+  // Fragment Shader
+  const fragmentShader = `
+      varying vec3 vNormal;
+      void main() {
+        float intensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 4.0);
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0) * intensity;
+      }
+    `;
+
+  // Shader Material
+  const glowMaterial = new THREE.ShaderMaterial({
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    side: THREE.BackSide,
+    // blending: THREE.AdditiveBlending,
+    transparent: true,
+  });
+
+  // Create a slightly larger sphere for the glow effect
+  const glowGeometry = new THREE.SphereGeometry(radius, height, width);
+  const glowSphere = new THREE.Mesh(glowGeometry, glowMaterial);
+  // glowBall.rotation.x = Math.PI / 2;
+  glowSphere.position.set(px, py, pz);
+  scene.add(glowSphere);
+
+  return glowSphere;
+};
+
 const addMouseInteraction = (canvas, object, camera) => {
   let isDragging = false;
   let previousMousePosition = { x: 0, y: 0 };
@@ -847,12 +1010,24 @@ const addMouseInteraction = (canvas, object, camera) => {
   canvas.addEventListener('wheel', onMouseWheel);
 };
 
-const animate = (scene, camera, renderer, cube, cube2, key, x, y, z) => {
+const animate = (
+  scene,
+  world,
+  camera,
+  renderer,
+  cube,
+  cubeBody,
+  cube2,
+  key,
+  x,
+  y,
+  z
+) => {
   let animationCount = 0;
   // Define the animation loop function
   let time = 0;
   const animateLoop = () => {
-    // if (animationCount >= 300) {
+    // if (animationCount >= 5) {
     //   // Check if the animation loop has run 10 times
     //   return; // Exit the animation loop if the limit is reached
     // }
@@ -879,7 +1054,7 @@ const animate = (scene, camera, renderer, cube, cube2, key, x, y, z) => {
 
     // key movement animation
     // Movement speed and rotation speed
-    const moveSpeed = 1;
+    const moveSpeed = 5;
     const rotateSpeed = 0.04;
 
     // Move ball
@@ -899,6 +1074,9 @@ const animate = (scene, camera, renderer, cube, cube2, key, x, y, z) => {
     }
 
     requestAnimationFrame(animateLoop);
+    // if (cube.name == 'glow') {
+    //   console.log(cube, 'cube2');
+    // }
 
     if (cube?.visible) {
       // Rotate the cube
@@ -907,8 +1085,21 @@ const animate = (scene, camera, renderer, cube, cube2, key, x, y, z) => {
       cube.rotation.z += z;
     }
 
+    world.step(1 / 60);
+    if (cubeBody && cube.name == 'ball22' && animationCount < 5) {
+      console.log(cubeBody, 'cubeBody');
+      console.log(cube, 'cube');
+    }
+    if (cubeBody && cube.name == 'ball22') {
+      cube.position.copy(cubeBody.position);
+      cube.quaternion.copy(cubeBody.quaternion);
+    }
+
     // Render the scene with the updated camera and cube positions
     renderer.render(scene, camera);
+
+    // Step the physics world
+
     animationCount++; // Increment the animation loop counter
   };
 
