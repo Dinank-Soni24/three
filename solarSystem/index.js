@@ -1,6 +1,10 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.module.js';
+import * as THREE from 'https://cdn.skypack.dev/three@0.133.1';
 
-import { UnrealBloomPass } from '//unpkg.com/three@0.123.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OrbitControls } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/controls/OrbitControls.js';
+import { EffectComposer } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 const main = async () => {
   // create Scene
@@ -11,47 +15,70 @@ const main = async () => {
   // Set up renderer
   const renderer = await windowRenderer();
 
-  // const sun = await windowSphere(
-  //   scene,
-  //   'standard',
-  //   false,
-  //   10,
-  //   32,
-  //   32,
-  //   0xe6e600,
-  //   0,
-  //   0,
-  //   0
-  // );
-  // sun.name = 'sun';
-  // Create a glowing effect for the Sun
-  const vertexShader = `
-  varying vec3 vNormal;
-  void main() {
-    vNormal = normalize(normalMatrix * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
+  const sun = await windowSphere(
+    scene,
+    'basic',
+    false,
+    10,
+    32,
+    32,
+    0xe6e600,
+    0,
+    0,
+    0
+  );
+  sun.name = 'sun';
+  sun.layers.enable(1);
+  // sun.castShadow = true;
 
-  const fragmentShader = `
-  varying vec3 vNormal;
-  void main() {
-    float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
-    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0) * intensity;
-  }
-`;
+  // Bloom effect setup
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    3,
+    0.5,
+    0
+  );
+  const bloomComposer = new EffectComposer(renderer);
+  bloomComposer.renderToScreen = false;
+  bloomComposer.addPass(new RenderPass(scene, camera));
+  bloomComposer.addPass(bloomPass);
 
-  const glowMaterial = new THREE.ShaderMaterial({
-    vertexShader: vertexShader,
-    fragmentShader: fragmentShader,
-    side: THREE.BackSide,
-    blending: THREE.AdditiveBlending,
-    // transparent: true,
+  // Shader pass for final rendering
+  const shaderMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      baseTexture: { value: null },
+      bloomTexture: { value: bloomComposer.renderTarget2.texture },
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+    fragmentShader: `
+        uniform sampler2D baseTexture;
+        uniform sampler2D bloomTexture;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = texture2D(baseTexture, vUv) + vec4(1.0) * texture2D(bloomTexture, vUv);
+        }
+      `,
   });
+  const finalPass = new ShaderPass(shaderMaterial, 'baseTexture');
+  const finalComposer = new EffectComposer(renderer);
+  finalComposer.addPass(new RenderPass(scene, camera));
+  finalComposer.addPass(finalPass);
 
-  const glowGeometry = new THREE.SphereGeometry(10 * 1.5, 32, 32); // Slightly larger than the Sun
-  const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-  scene.add(glow);
+  // Bloom layer setup
+  const bloomLayer = new THREE.Layers();
+  bloomLayer.set(1);
+
+  //   // OrbitControls setup
+  // const controls = new OrbitControls(camera, renderer.domElement);
+
+  // Store original materials
+  const materials = [];
 
   const mercury = await windowSphere(
     scene,
@@ -69,10 +96,8 @@ const main = async () => {
     scene,
     'basic',
     39,
-    39.1,
-    64,
-    0,
-    0x8b8680,
+    0.1,
+    0x090909,
     0,
     0,
     0
@@ -81,6 +106,7 @@ const main = async () => {
   mercury.distance = mercury.position.z;
   mercuryOrbit.orbitalPeriod = 88;
   mercuryOrbit.name = 'Orbit';
+
   const venus = await windowSphere(
     scene,
     'standard',
@@ -97,10 +123,8 @@ const main = async () => {
     scene,
     'basic',
     72,
-    72.2,
-    64,
-    0,
-    0xeed5b7,
+    0.2,
+    0x090909,
     0,
     0,
     0
@@ -109,8 +133,10 @@ const main = async () => {
   venus.distance = venus.position.z;
   venusOrbit.orbitalPeriod = 225;
   venusOrbit.name = 'Orbit';
+
+  const earthGroup = new THREE.Group();
   const earth = await windowSphere(
-    scene,
+    earthGroup,
     'standard',
     false,
     1,
@@ -119,24 +145,43 @@ const main = async () => {
     0x2b65ec,
     0,
     0,
-    100
+    0
   );
   const earthOrbit = await windowRing(
     scene,
     'basic',
     100,
-    100.3,
-    64,
-    0,
-    0x2b65ec,
+    0.2,
+    0x090909,
     0,
     0,
     0
   );
-  earth.orbitalPeriod = 365;
-  earth.distance = earth.position.z;
+  // Create Moon
+  const moon = await windowSphere(
+    earthGroup,
+    'standard',
+    false,
+    0.27, // Moon's radius relative to Earth
+    32,
+    32,
+    0xff0000,
+    0,
+    0,
+    0 // Distance from Earth
+  );
+  scene.add(earthGroup);
+  earthGroup.position.set(0, 0, 100);
+  // moon.layers.enable(1);
+  moon.orbitalPeriod = 88;
+  // moon.distance = moon.position.z;
+  console.log(moon);
+  moon.name = 'Moon';
+  earthGroup.orbitalPeriod = 365;
+  earthGroup.distance = earthGroup.position.z;
   earthOrbit.orbitalPeriod = 365;
   earthOrbit.name = 'Orbit';
+
   const mars = await windowSphere(
     scene,
     'standard',
@@ -153,10 +198,8 @@ const main = async () => {
     scene,
     'basic',
     152,
-    152.4,
-    64,
-    0,
-    0xa52a2a,
+    0.2,
+    0x090909,
     0,
     0,
     0
@@ -181,10 +224,8 @@ const main = async () => {
     scene,
     'basic',
     300,
-    300.5,
-    64,
-    0,
-    0xf4a460,
+    0.2,
+    0x090909,
     0,
     0,
     0
@@ -209,10 +250,8 @@ const main = async () => {
     scene,
     'basic',
     450,
-    450.9,
-    64,
-    0,
-    0xd2b48c,
+    0.2,
+    0x090909,
     0,
     0,
     0
@@ -237,10 +276,8 @@ const main = async () => {
     scene,
     'basic',
     550,
-    550.9,
-    64,
-    0,
-    0xafeeee,
+    0.2,
+    0x090909,
     0,
     0,
     0
@@ -265,10 +302,8 @@ const main = async () => {
     scene,
     'basic',
     650,
-    650.9,
-    64,
-    0,
-    0x0000ff,
+    0.2,
+    0x090909,
     0,
     0,
     0
@@ -282,9 +317,15 @@ const main = async () => {
   createStarField(scene);
 
   // Light source
-  const light = new THREE.PointLight(0xffffff, 1, 0);
+  const light = new THREE.PointLight(0xffffff, 0.7, 0);
   light.position.set(0, 0, 0); // Position the light at the center (Sun)
+  light.castShadow = true; // Enable shadows for the light
+  light.shadow.mapSize.width = 1024; // Shadow map resolution
+  light.shadow.mapSize.height = 1024;
+  light.shadow.camera.near = 0.5;
+  light.shadow.camera.far = 500;
   scene.add(light);
+  // light.castShadow = true;
 
   // Add ambient light to illuminate the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -293,23 +334,180 @@ const main = async () => {
   // Add mouse interaction for rotating the torus
   addMouseInteraction(renderer.domElement, scene, camera);
 
-  // animate(scene, sun, camera, renderer, 0, 0.1, 0);
-  animate(scene, mercury, camera, renderer, 0, 0, 0);
-  animate(scene, mercuryOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, venus, camera, renderer, 0, 0, 0);
-  animate(scene, venusOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, earth, camera, renderer, 0, 0, 0);
-  animate(scene, earthOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, mars, camera, renderer, 0, 0, 0);
-  animate(scene, marsOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, jupiter, camera, renderer, 0, 0, 0);
-  animate(scene, jupiterOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, saturn, camera, renderer, 0, 0, 0);
-  animate(scene, saturnOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, uranus, camera, renderer, 0, 0, 0);
-  animate(scene, uranusOrbit, camera, renderer, 0, 0, 0);
-  animate(scene, neptune, camera, renderer, 0, 0, 0);
-  animate(scene, neptuneOrbit, camera, renderer, 0, 0, 0);
+  animate(
+    scene,
+    bloomComposer,
+    finalComposer,
+    sun,
+    camera,
+    renderer,
+    0,
+    0.1,
+    0,
+    bloomLayer,
+    materials
+  );
+  animate(
+    scene,
+    false,
+    false,
+    mercury,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(
+    scene,
+    false,
+    false,
+    mercuryOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(scene, false, false, venus, camera, renderer, 0, 0, 0), false, false;
+  animate(
+    scene,
+    false,
+    false,
+    venusOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(
+    scene,
+    false,
+    false,
+    earthGroup,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(scene, false, false, moon, camera, renderer, 0, 0, 0, false, false);
+  animate(
+    scene,
+    false,
+    false,
+    earthOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(scene, false, false, mars, camera, renderer, 0, 0, 0, false, false);
+  animate(
+    scene,
+    false,
+    false,
+    marsOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(
+    scene,
+    false,
+    false,
+    jupiter,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(
+    scene,
+    false,
+    false,
+    jupiterOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(scene, false, false, saturn, camera, renderer, 0, 0, 0, false, false);
+  animate(
+    scene,
+    false,
+    false,
+    saturnOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(scene, false, false, uranus, camera, renderer, 0, 0, 0, false, false);
+  animate(
+    scene,
+    false,
+    false,
+    uranusOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(
+    scene,
+    false,
+    false,
+    neptune,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
+  animate(
+    scene,
+    false,
+    false,
+    neptuneOrbit,
+    camera,
+    renderer,
+    0,
+    0,
+    0,
+    false,
+    false
+  );
 };
 
 const windowCamera = async () => {
@@ -331,6 +529,9 @@ const windowRenderer = async () => {
   const renderer = new THREE.WebGLRenderer({ canvas }); // create WebGLRenderer instance to render the scene in the canvas element using the WebGL API
   renderer.setSize(window.innerWidth, window.innerHeight); // set the size of the renderer to match the size of the canvas element
 
+  renderer.shadowMap.enabled = true; // Enable shadow maps
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Optional: Soft shadows
+
   return renderer;
 };
 
@@ -350,11 +551,15 @@ const windowSphere = async (
   const material =
     materials == 'standard'
       ? new THREE.MeshStandardMaterial({ color })
-      : new THREE.MeshBasicMaterial({ color });
+      : new THREE.MeshBasicMaterial({
+          color,
+        });
   const sphere = new THREE.Mesh(geometry, material);
   sphere.position.set(px, py, pz);
-  sphere.castShadow = true;
-  sphere.receiveShadow = true;
+  if (materials == 'standard') {
+    sphere.castShadow = true;
+    sphere.receiveShadow = true;
+  }
   if (streetLight) {
     sphere.material.color.r = 1.6;
     sphere.material.color.g = 1.6;
@@ -370,23 +575,14 @@ const windowSphere = async (
 const windowRing = async (
   scene,
   materials,
-  innerRadius,
-  outerRadius,
-  thetaSegments,
-  phiSegments,
+  radius,
+  tubeRadius,
   color,
   px,
   py,
   pz
 ) => {
-  const geometry = new THREE.RingGeometry(
-    innerRadius,
-    outerRadius,
-    thetaSegments,
-    phiSegments,
-    3.14,
-    2
-  );
+  const geometry = new THREE.TorusGeometry(radius, tubeRadius, 12, 48, 2.5);
   const material =
     materials == 'standard'
       ? new THREE.MeshStandardMaterial({
@@ -418,7 +614,7 @@ const createStarField = (scene) => {
     const distance = Math.sqrt(x * x + y * y + z * z);
 
     // Only push to array if distance is greater than 500
-    if (distance > 1000) {
+    if (distance > 1000 && distance < 2000) {
       starVertices.push(x, y, z);
     }
   }
@@ -429,6 +625,7 @@ const createStarField = (scene) => {
   );
 
   const stars = new THREE.Points(starGeometry, starMaterial);
+  stars.layers.enable(1);
   scene.add(stars);
 };
 
@@ -485,12 +682,42 @@ const addMouseInteraction = (canvas, object, camera) => {
   canvas.addEventListener('wheel', onMouseWheel);
 };
 
-const animate = (scene, cube, camera, renderer, x, y, z) => {
+// Darken objects not in the bloom layer
+const darkenMaterial = (obj, bloomLayer, materials) => {
+  if (!bloomLayer.test(obj.layers)) {
+    materials[obj.uuid] = obj.material;
+    obj.material = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  }
+};
+
+// Restore original materials
+const restoreMaterial = (obj, materials) => {
+  if (materials[obj.uuid]) {
+    obj.material = materials[obj.uuid];
+    delete materials[obj.uuid];
+  }
+};
+
+const animate = (
+  scene,
+  bloomComposer,
+  finalComposer,
+  cube,
+  camera,
+  renderer,
+  x,
+  y,
+  z,
+  bloomLayer,
+  materials
+) => {
   let animationCount = 0;
 
   const animateLoop = () => {
     requestAnimationFrame(animateLoop);
     const time = Date.now() * 0.0001;
+    // rotate planets around the sun
+    const angle = time * (365 / cube.orbitalPeriod); // Speed based on orbital period
 
     if (cube?.visible && cube?.name == 'sun') {
       // Rotate the cube
@@ -498,18 +725,25 @@ const animate = (scene, cube, camera, renderer, x, y, z) => {
       cube.rotation.y += y;
       cube.rotation.z += z;
     } else if (cube?.distance && cube?.orbitalPeriod) {
-      // rotate planets around the sun
-      const angle = time * (365 / cube.orbitalPeriod); // Speed based on orbital period
-
       cube.position.x = cube?.distance * Math.cos(angle);
       cube.position.z = cube?.distance * Math.sin(angle);
     }
+    if (cube?.name == 'Moon') {
+      cube.position.z = 3 * Math.sin(angle); // - max start
+      cube.position.x = 3 * Math.cos(angle); // + min start
+    }
     if (cube?.name == 'Orbit') {
       const angle = time * (365 / cube.orbitalPeriod);
-      cube.rotation.z = -angle;
+      cube.rotation.z = -angle + Math.PI;
+    }
+    if (bloomComposer && finalComposer && bloomLayer && materials) {
+      scene.traverse((obj) => darkenMaterial(obj, bloomLayer, materials));
+      bloomComposer.render();
+      scene.traverse((obj) => restoreMaterial(obj, materials));
+      finalComposer.render();
     }
 
-    renderer.render(scene, camera);
+    // renderer.render(scene, camera);
     animationCount++; // Increment the animation loop counter
   };
   animateLoop();

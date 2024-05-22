@@ -99,8 +99,8 @@ const material = new THREE.PointsMaterial({
   color: 0xffffe6,
 });
 const particles = new THREE.Points(geometry, material);
-particles.layers.enable(1);
 scene.add(particles);
+particles.layers.enable(1);
 
 // Lighting setup
 const ambientLight = new THREE.AmbientLight(0x666666);
@@ -178,6 +178,7 @@ const animate = () => {
   ringInside.rotation.z += 0.01;
   ringMiddle.rotation.z += -0.01;
   ringOutside.rotation.z += 0.01;
+
   scene.traverse(darkenMaterial);
   bloomComposer.render();
   scene.traverse(restoreMaterial);
