@@ -15,9 +15,10 @@ const main = async () => {
   // Set up renderer
   const renderer = await windowRenderer();
 
+  const solarSystem = new THREE.Group();
   const sun = await windowSphere(
-    scene,
-    'basic',
+    solarSystem,
+    'phong',
     false,
     10,
     32,
@@ -29,14 +30,16 @@ const main = async () => {
   );
   sun.name = 'sun';
   sun.layers.enable(1);
+  solarSystem.name = 'solarSystem';
+  scene.add(solarSystem);
   // sun.castShadow = true;
 
   // Bloom effect setup
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    3,
-    0.5,
-    0
+    3, // strength
+    0.5, // radius
+    0 // threshold
   );
   const bloomComposer = new EffectComposer(renderer);
   bloomComposer.renderToScreen = false;
@@ -80,8 +83,14 @@ const main = async () => {
   // Store original materials
   const materials = [];
 
+  const belt = new THREE.Group();
+  // Generate the asteroid belt between Earth and Mars
+  generateAsteroidBelt(belt, 200, 260, 500);
+  solarSystem.add(belt);
+
+  const mercuryGroup = new THREE.Group();
   const mercury = await windowSphere(
-    scene,
+    mercuryGroup,
     'standard',
     false,
     0.38,
@@ -90,25 +99,18 @@ const main = async () => {
     0x8b8680,
     0,
     0,
-    39
-  );
-  const mercuryOrbit = await windowRing(
-    scene,
-    'basic',
-    39,
-    0.1,
-    0x090909,
-    0,
-    0,
     0
   );
-  mercury.orbitalPeriod = 88;
-  mercury.distance = mercury.position.z;
-  mercuryOrbit.orbitalPeriod = 88;
-  mercuryOrbit.name = 'Orbit';
+  mercuryGroup.position.set(0, 0, 39);
+  mercuryGroup.orbitalPeriod = 88;
+  mercuryGroup.distance = mercuryGroup.position.z;
+  mercuryGroup.name = 'Orbit';
+  mercuryGroup.PlanetName = 'mercury';
+  solarSystem.add(mercuryGroup);
 
+  const venusGroup = new THREE.Group();
   const venus = await windowSphere(
-    scene,
+    venusGroup,
     'standard',
     false,
     0.95,
@@ -117,22 +119,14 @@ const main = async () => {
     0xeed5b7,
     0,
     0,
-    72
-  );
-  const venusOrbit = await windowRing(
-    scene,
-    'basic',
-    72,
-    0.2,
-    0x090909,
-    0,
-    0,
     0
   );
-  venus.orbitalPeriod = 225;
-  venus.distance = venus.position.z;
-  venusOrbit.orbitalPeriod = 225;
-  venusOrbit.name = 'Orbit';
+  solarSystem.add(venusGroup);
+  venusGroup.position.set(0, 0, 72);
+  venusGroup.orbitalPeriod = 225;
+  venusGroup.distance = venusGroup.position.z;
+  venusGroup.name = 'Orbit';
+  venusGroup.PlanetName = 'venus';
 
   const earthGroup = new THREE.Group();
   const earth = await windowSphere(
@@ -147,16 +141,16 @@ const main = async () => {
     0,
     0
   );
-  const earthOrbit = await windowRing(
-    scene,
-    'basic',
-    100,
-    0.2,
-    0x090909,
-    0,
-    0,
-    0
-  );
+  // const earthOrbit = await windowRing(
+  //   scene,
+  //   'basic',
+  //   100,
+  //   0.2,
+  //   0x090909,
+  //   0,
+  //   0,
+  //   0
+  // );
   // Create Moon
   const moon = await windowSphere(
     earthGroup,
@@ -165,25 +159,24 @@ const main = async () => {
     0.27, // Moon's radius relative to Earth
     32,
     32,
-    0xff0000,
+    0xffffff,
     0,
     0,
     0 // Distance from Earth
   );
-  scene.add(earthGroup);
+  solarSystem.add(earthGroup);
   earthGroup.position.set(0, 0, 100);
   // moon.layers.enable(1);
   moon.orbitalPeriod = 88;
-  // moon.distance = moon.position.z;
   console.log(moon);
   moon.name = 'Moon';
   earthGroup.orbitalPeriod = 365;
   earthGroup.distance = earthGroup.position.z;
-  earthOrbit.orbitalPeriod = 365;
-  earthOrbit.name = 'Orbit';
+  earthGroup.name = 'Orbit';
 
+  const marsGroup = new THREE.Group();
   const mars = await windowSphere(
-    scene,
+    marsGroup,
     'standard',
     false,
     0.53,
@@ -192,24 +185,18 @@ const main = async () => {
     0xa52a2a,
     0,
     0,
-    152
-  );
-  const marsOrbit = await windowRing(
-    scene,
-    'basic',
-    152,
-    0.2,
-    0x090909,
-    0,
-    0,
     0
   );
-  mars.orbitalPeriod = 687;
-  mars.distance = mars.position.z;
-  marsOrbit.orbitalPeriod = 687;
-  marsOrbit.name = 'Orbit';
+  marsGroup.position.set(0, 0, 152);
+  marsGroup.orbitalPeriod = 687;
+  marsGroup.distance = marsGroup.position.z;
+  marsGroup.name = 'Orbit';
+  marsGroup.PlanetName = 'mars';
+  solarSystem.add(marsGroup);
+
+  const jupiterGroup = new THREE.Group();
   const jupiter = await windowSphere(
-    scene,
+    jupiterGroup,
     'standard',
     false,
     11,
@@ -218,24 +205,18 @@ const main = async () => {
     0xf4a460,
     0,
     0,
-    300
-  );
-  const jupiterOrbit = await windowRing(
-    scene,
-    'basic',
-    300,
-    0.2,
-    0x090909,
-    0,
-    0,
     0
   );
-  jupiter.orbitalPeriod = 4333;
-  jupiter.distance = jupiter.position.z;
-  jupiterOrbit.orbitalPeriod = 4333;
-  jupiterOrbit.name = 'Orbit';
+  jupiterGroup.position.set(0, 0, 300);
+  jupiterGroup.orbitalPeriod = 4333;
+  jupiterGroup.distance = jupiterGroup.position.z;
+  jupiterGroup.name = 'Orbit';
+  jupiterGroup.PlanetName = 'jupiter';
+  solarSystem.add(jupiterGroup);
+
+  const saturnGroup = new THREE.Group();
   const saturn = await windowSphere(
-    scene,
+    saturnGroup,
     'standard',
     false,
     9.5,
@@ -244,24 +225,18 @@ const main = async () => {
     0xd2b48c,
     0,
     0,
-    450
-  );
-  const saturnOrbit = await windowRing(
-    scene,
-    'basic',
-    450,
-    0.2,
-    0x090909,
-    0,
-    0,
     0
   );
-  saturn.orbitalPeriod = 10759;
-  saturn.distance = saturn.position.z;
-  saturnOrbit.orbitalPeriod = 10759;
-  saturnOrbit.name = 'Orbit';
+  saturnGroup.position.set(0, 0, 450);
+  saturnGroup.orbitalPeriod = 10759;
+  saturnGroup.distance = saturnGroup.position.z;
+  saturnGroup.name = 'Orbit';
+  saturnGroup.PlanetName = 'saturn';
+  solarSystem.add(saturnGroup);
+
+  const uranusGroup = new THREE.Group();
   const uranus = await windowSphere(
-    scene,
+    uranusGroup,
     'standard',
     false,
     4,
@@ -270,24 +245,18 @@ const main = async () => {
     0xafeeee,
     0,
     0,
-    550
-  );
-  const uranusOrbit = await windowRing(
-    scene,
-    'basic',
-    550,
-    0.2,
-    0x090909,
-    0,
-    0,
     0
   );
-  uranus.orbitalPeriod = 30687;
-  uranus.distance = uranus.position.z;
-  uranusOrbit.orbitalPeriod = 30687;
-  uranusOrbit.name = 'Orbit';
+  uranusGroup.position.set(0, 0, 550);
+  uranusGroup.orbitalPeriod = 30687;
+  uranusGroup.distance = uranusGroup.position.z;
+  uranusGroup.name = 'Orbit';
+  uranusGroup.PlanetName = 'uranus';
+  solarSystem.add(uranusGroup);
+
+  const neptuneGroup = new THREE.Group();
   const neptune = await windowSphere(
-    scene,
+    neptuneGroup,
     'standard',
     false,
     3.88,
@@ -296,25 +265,19 @@ const main = async () => {
     0x0000ff,
     0,
     0,
-    650
-  );
-  const neptuneOrbit = await windowRing(
-    scene,
-    'basic',
-    650,
-    0.2,
-    0x090909,
-    0,
-    0,
     0
   );
-  neptune.orbitalPeriod = 60190;
-  neptune.distance = neptune.position.z;
-  neptuneOrbit.orbitalPeriod = 60190;
-  neptuneOrbit.name = 'Orbit';
+  neptuneGroup.position.set(0, 0, 650);
+  neptuneGroup.orbitalPeriod = 60190;
+  neptuneGroup.distance = neptuneGroup.position.z;
+  neptuneGroup.name = 'Orbit';
+  neptuneGroup.PlanetName = 'neptune';
+  solarSystem.add(neptuneGroup);
 
+  const starts = new THREE.Group();
   // Create the star field
-  createStarField(scene);
+  createStarField(starts);
+  solarSystem.add(starts);
 
   // Light source
   const light = new THREE.PointLight(0xffffff, 0.7, 0);
@@ -324,190 +287,82 @@ const main = async () => {
   light.shadow.mapSize.height = 1024;
   light.shadow.camera.near = 0.5;
   light.shadow.camera.far = 500;
-  scene.add(light);
+  solarSystem.add(light);
   // light.castShadow = true;
 
   // Add ambient light to illuminate the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
+  solarSystem.add(ambientLight);
 
   // Add mouse interaction for rotating the torus
   addMouseInteraction(renderer.domElement, scene, camera);
 
-  animate(
+  const animateSun = {
     scene,
+    camera,
+    renderer,
+    cube: sun,
     bloomComposer,
     finalComposer,
-    sun,
-    camera,
-    renderer,
-    0,
-    0.1,
-    0,
     bloomLayer,
-    materials
-  );
-  animate(
-    scene,
-    false,
-    false,
-    mercury,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(
-    scene,
-    false,
-    false,
-    mercuryOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(scene, false, false, venus, camera, renderer, 0, 0, 0), false, false;
-  animate(
-    scene,
-    false,
-    false,
-    venusOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(
-    scene,
-    false,
-    false,
-    earthGroup,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(scene, false, false, moon, camera, renderer, 0, 0, 0, false, false);
-  animate(
-    scene,
-    false,
-    false,
-    earthOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(scene, false, false, mars, camera, renderer, 0, 0, 0, false, false);
-  animate(
-    scene,
-    false,
-    false,
-    marsOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(
-    scene,
-    false,
-    false,
-    jupiter,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(
-    scene,
-    false,
-    false,
-    jupiterOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(scene, false, false, saturn, camera, renderer, 0, 0, 0, false, false);
-  animate(
-    scene,
-    false,
-    false,
-    saturnOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(scene, false, false, uranus, camera, renderer, 0, 0, 0, false, false);
-  animate(
-    scene,
-    false,
-    false,
-    uranusOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(
-    scene,
-    false,
-    false,
-    neptune,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
-  animate(
-    scene,
-    false,
-    false,
-    neptuneOrbit,
-    camera,
-    renderer,
-    0,
-    0,
-    0,
-    false,
-    false
-  );
+    materials,
+    group: solarSystem,
+  };
+  animate(animateSun);
+  const animateMercury = {
+    cube: mercuryGroup,
+  };
+  animate(animateMercury);
+  const animateVenus = {
+    cube: venusGroup,
+  };
+  animate(animateVenus);
+  const animateEarth = {
+    cube: earthGroup,
+  };
+  animate(animateEarth);
+  const animateMars = {
+    cube: marsGroup,
+  };
+  animate(animateMars);
+  const animateJupiter = {
+    cube: jupiterGroup,
+  };
+  animate(animateJupiter);
+  const animateSaturn = {
+    cube: saturnGroup,
+  };
+  animate(animateSaturn);
+  const animateUranus = {
+    cube: uranusGroup,
+  };
+  animate(animateUranus);
+  const animateNeptune = {
+    cube: neptuneGroup,
+  };
+  animate(animateNeptune);
+  const animateMoon = {
+    cube: moon,
+  };
+  animate(animateMoon);
+  const animateSolarSystem = {
+    cube: solarSystem,
+  };
+  animate(animateSolarSystem);
+  // const animateBelt = {
+  //   cube: belt,
+  //   x: 0,
+  //   y: 0.00005,
+  //   z: 0,
+  // };
+  // animate(animateBelt);
+  // const animateStarts = {
+  //   cube: starts,
+  //   x: 0,
+  //   y: 0.000001,
+  //   z: 0,
+  // };
+  // animate(animateStarts);
 };
 
 const windowCamera = async () => {
@@ -551,6 +406,11 @@ const windowSphere = async (
   const material =
     materials == 'standard'
       ? new THREE.MeshStandardMaterial({ color })
+      : materials == 'phong'
+      ? new THREE.MeshPhongMaterial({
+          color,
+          emissive: 0x000000,
+        })
       : new THREE.MeshBasicMaterial({
           color,
         });
@@ -698,52 +558,204 @@ const restoreMaterial = (obj, materials) => {
   }
 };
 
-const animate = (
-  scene,
-  bloomComposer,
-  finalComposer,
-  cube,
-  camera,
-  renderer,
-  x,
-  y,
-  z,
-  bloomLayer,
-  materials
-) => {
-  let animationCount = 0;
+const generateAsteroidBelt = (scene, innerRadius, outerRadius, count) => {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * 2 * Math.PI;
+    const radius = innerRadius + Math.random() * (outerRadius - innerRadius);
+    const x = radius * Math.cos(angle);
+    const z = radius * Math.sin(angle);
+    const y = (Math.random() - 0.5) * 10; // Slight vertical spread
 
+    const asteroid = new THREE.Mesh(
+      new THREE.SphereGeometry(Math.random() * 0.3, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x0080ff })
+    );
+    asteroid.position.set(x, y, z);
+    asteroid.castShadow = true;
+    asteroid.receiveShadow = true;
+    asteroid.layers.enable(1);
+    scene.add(asteroid);
+  }
+};
+
+// const windowShape = (scene, shapePoints) => {
+//   const shape = new THREE.Shape(shapePoints);
+//   // Define settings for extrusion
+//   const extrudeSettings = {
+//     depth: 0.1, // Depth of extrusion
+//     bevelEnabled: false, // Disable bevel
+//     bevelThickness: 1,
+//     bevelSize: 1,
+//     bevelOffset: 0,
+//     bevelSegments: 1,
+//   };
+
+//   // Create a geometry by extruding the shape
+//   const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+//   // Create a material
+//   const material = new THREE.MeshBasicMaterial({ color: 0x0f0f0f });
+
+//   // Create a mesh using the geometry and material
+//   const mesh = new THREE.Mesh(geometry, material);
+//   // mesh.position.set(0, 0, 0);
+//   mesh.rotation.x = Math.PI / 2;
+//   // Add the mesh to the scene
+//   mesh.layers.enable(1);
+//   scene.add(mesh);
+
+//   return mesh;
+// };
+
+const windowShape = (scene, shapePoints) => {
+  const geometry = new THREE.BufferGeometry().setFromPoints(shapePoints);
+
+  const material = new THREE.LineBasicMaterial({ color: 0x0f0f0f });
+
+  const line = new THREE.Line(geometry, material);
+  line.layers.enable(1);
+  scene.add(line);
+
+  return line;
+};
+
+let scene;
+let shapePoints = {};
+let cameraNearPlanet = false; // Flag to toggle camera movement
+let cameraPathRadius = 150; // Distance from the solar system
+let cameraPathAngle = 0; // Initial angle
+const animate = (animateCube) => {
+  let animationCount = 0;
+  let oldShapeMesh = null;
+  let yPoint = 0;
+  if (animateCube.scene) {
+    scene = animateCube.scene;
+  }
+
+  console.log(animateCube, 'animateCube');
+  console.log(scene, 'scene');
   const animateLoop = () => {
+    // if (animationCount >= 200) {
+    //   // Check if the animation loop has run 10 times
+    //   return; // Exit the animation loop if the limit is reached
+    // }
     requestAnimationFrame(animateLoop);
     const time = Date.now() * 0.0001;
     // rotate planets around the sun
-    const angle = time * (365 / cube.orbitalPeriod); // Speed based on orbital period
+    const angle = time * (365 / animateCube.cube.orbitalPeriod); // Speed based on orbital period
 
-    if (cube?.visible && cube?.name == 'sun') {
+    if (
+      animateCube?.x >= 0 &&
+      animateCube?.y >= 0 &&
+      animateCube?.z >= 0
+      // animateCube.cube?.name == 'sun'
+    ) {
       // Rotate the cube
-      cube.rotation.x += x;
-      cube.rotation.y += y;
-      cube.rotation.z += z;
-    } else if (cube?.distance && cube?.orbitalPeriod) {
-      cube.position.x = cube?.distance * Math.cos(angle);
-      cube.position.z = cube?.distance * Math.sin(angle);
+      animateCube.cube.rotation.x += animateCube.x;
+      animateCube.cube.rotation.y += animateCube.y;
+      animateCube.cube.rotation.z += animateCube.z;
+    } else if (animateCube.cube?.distance && animateCube.cube?.orbitalPeriod) {
+      animateCube.cube.position.x =
+        animateCube.cube?.distance * Math.cos(angle);
+      animateCube.cube.position.z =
+        animateCube.cube?.distance * Math.sin(angle);
+
+      let name = animateCube?.cube?.PlanetName;
+      yPoint = yPoint + animateCube.cube.position.y + 0.1;
+      const point = new THREE.Vector3(
+        animateCube.cube.position.x,
+        yPoint,
+        animateCube.cube.position.z
+      );
+      if (!shapePoints[name]) {
+        shapePoints[name] = [];
+      }
+      const shapePointsLength = shapePoints[name].length;
+      if (shapePointsLength == 0) {
+        shapePoints[name].push(point);
+        shapePoints[name].push(point);
+      } else if (shapePointsLength >= animateCube.cube.distance * 10) {
+        shapePoints[name].shift();
+        shapePoints[name].pop();
+      } else {
+        shapePoints[name].splice(shapePointsLength / 2, 0, point);
+        shapePoints[name].splice(shapePointsLength / 2, 0, point);
+      }
     }
-    if (cube?.name == 'Moon') {
-      cube.position.z = 3 * Math.sin(angle); // - max start
-      cube.position.x = 3 * Math.cos(angle); // + min start
+    if (animateCube?.cube?.name == 'Moon') {
+      animateCube.cube.position.z = 3 * Math.sin(angle); // - max start
+      animateCube.cube.position.x = 3 * Math.cos(angle); // + min start
     }
-    if (cube?.name == 'Orbit') {
-      const angle = time * (365 / cube.orbitalPeriod);
-      cube.rotation.z = -angle + Math.PI;
+    if (animateCube?.cube?.name == 'Orbit') {
+      // const angle = time * (365 / animateCube.cube.orbitalPeriod);
+      // animateCube.cube.rotation.z = -angle + Math.PI;
+      if (oldShapeMesh) {
+        scene.remove(oldShapeMesh);
+        oldShapeMesh.geometry.dispose();
+        oldShapeMesh.material.dispose();
+      }
+
+      let name = animateCube?.cube?.PlanetName;
+      // console.log('first', shapePoints);
+      // console.log('cdc', name);
+      // console.log('cdc', shapePoints.mercury);
+      oldShapeMesh = windowShape(scene, shapePoints[name]);
     }
-    if (bloomComposer && finalComposer && bloomLayer && materials) {
-      scene.traverse((obj) => darkenMaterial(obj, bloomLayer, materials));
-      bloomComposer.render();
-      scene.traverse((obj) => restoreMaterial(obj, materials));
-      finalComposer.render();
+    if (
+      animateCube?.bloomComposer &&
+      animateCube?.finalComposer &&
+      animateCube?.bloomLayer &&
+      animateCube?.materials
+    ) {
+      animateCube?.scene.traverse((obj) =>
+        darkenMaterial(obj, animateCube.bloomLayer, animateCube.materials)
+      );
+      animateCube.bloomComposer.render();
+      animateCube?.scene.traverse((obj) =>
+        restoreMaterial(obj, animateCube.materials)
+      );
+      animateCube.finalComposer.render();
     }
 
-    // renderer.render(scene, camera);
+    if (animateCube?.cube?.name == 'solarSystem') {
+      animateCube.cube.position.y += 0.1;
+    }
+
+    if (animateCube?.camera) {
+      // Camera movement
+      if (!cameraNearPlanet) {
+        cameraPathAngle += 0.01; // Adjust this for speed of rotation
+        animateCube.camera.position.x =
+          cameraPathRadius * Math.cos(cameraPathAngle);
+        animateCube.camera.position.z =
+          cameraPathRadius * Math.sin(cameraPathAngle);
+        animateCube.camera.position.y += 0.1; // Fixed height
+        animateCube.camera.lookAt(
+          new THREE.Vector3(0, animateCube.camera.position.y, 0)
+        ); // Look at the center of the solar system
+
+        animateCube.camera.rotation.z += 1;
+      } else {
+        // Move camera closer to the selected planet (e.g., Earth)
+        const targetPlanet = scene.getObjectByName('earth'); // Adjust as necessary
+        if (targetPlanet) {
+          animateCube.camera.position.lerp(
+            targetPlanet.position.clone().add(new THREE.Vector3(10, 10, 10)),
+            0.05
+          ); // Adjust distance
+          animateCube?.camera.lookAt(targetPlanet.position);
+        }
+      }
+    }
+
+    // document.addEventListener('keydown', (event) => {
+    //   if (event.key === 'p') {
+    //     // Press 'p' to toggle camera movement near planet
+    //     cameraNearPlanet = !cameraNearPlanet;
+    //   }
+    // });
+
+    // animateCube.renderer.render(animateCube.scene, animateCube.camera);
     animationCount++; // Increment the animation loop counter
   };
   animateLoop();
