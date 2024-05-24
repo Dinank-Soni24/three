@@ -5,6 +5,7 @@ import { EffectComposer } from 'https://cdn.skypack.dev/three@0.133.1/examples/j
 import { RenderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { GUI } from 'https://cdn.skypack.dev/dat.gui';
 
 const main = async () => {
   // create Scene
@@ -77,8 +78,11 @@ const main = async () => {
   const bloomLayer = new THREE.Layers();
   bloomLayer.set(1);
 
-  //   // OrbitControls setup
+  // OrbitControls setup
   // const controls = new OrbitControls(camera, renderer.domElement);
+  // controls.enableDamping = true;
+  // controls.dampingFactor = 0.25;
+  // controls.enableZoom = true;
 
   // Store original materials
   const materials = [];
@@ -141,16 +145,6 @@ const main = async () => {
     0,
     0
   );
-  // const earthOrbit = await windowRing(
-  //   scene,
-  //   'basic',
-  //   100,
-  //   0.2,
-  //   0x090909,
-  //   0,
-  //   0,
-  //   0
-  // );
   // Create Moon
   const moon = await windowSphere(
     earthGroup,
@@ -168,11 +162,13 @@ const main = async () => {
   earthGroup.position.set(0, 0, 100);
   // moon.layers.enable(1);
   moon.orbitalPeriod = 88;
-  console.log(moon);
+  // console.log(moon);
   moon.name = 'Moon';
   earthGroup.orbitalPeriod = 365;
   earthGroup.distance = earthGroup.position.z;
   earthGroup.name = 'Orbit';
+  earthGroup.PlanetName = 'earth';
+  earthGroup.rotation.x = THREE.MathUtils.degToRad(20);
 
   const marsGroup = new THREE.Group();
   const mars = await windowSphere(
@@ -227,12 +223,82 @@ const main = async () => {
     0,
     0
   );
+  // console.log(
+  //   saturnGroup.children[0].geometry.parameters.radius,
+  //   'saturnGroup'
+  // );
   saturnGroup.position.set(0, 0, 450);
   saturnGroup.orbitalPeriod = 10759;
   saturnGroup.distance = saturnGroup.position.z;
   saturnGroup.name = 'Orbit';
+  saturnGroup.rotation.x = THREE.MathUtils.degToRad(10);
   saturnGroup.PlanetName = 'saturn';
   solarSystem.add(saturnGroup);
+
+  const saturnRing = new THREE.Group();
+  const ring = await windowRing(saturnRing, 'basic', 10, 11, 0x331a00, 0, 0, 0);
+  const ring1 = await windowRing(
+    saturnRing,
+    'basic',
+    11,
+    12.5,
+    0x331a00,
+    0,
+    0,
+    0
+  );
+  const ring2 = await windowRing(
+    saturnRing,
+    'basic',
+    12.7,
+    13.5,
+    0x331a00,
+    0,
+    0,
+    0
+  );
+  const ring3 = await windowRing(
+    saturnRing,
+    'basic',
+    13.7,
+    15,
+    0x331a00,
+    0,
+    0,
+    0
+  );
+  const ring4 = await windowRing(
+    saturnRing,
+    'basic',
+    15.1,
+    16,
+    0x331a00,
+    0,
+    0,
+    0
+  );
+  const ring5 = await windowRing(
+    saturnRing,
+    'basic',
+    16.3,
+    17.3,
+    0x331a00,
+    0,
+    0,
+    0
+  );
+  const ring6 = await windowRing(
+    saturnRing,
+    'basic',
+    17.5,
+    18,
+    0x331a00,
+    0,
+    0,
+    0
+  );
+  // saturnRing.position.set(0, 0, 0);
+  saturnGroup.add(saturnRing);
 
   const uranusGroup = new THREE.Group();
   const uranus = await windowSphere(
@@ -295,7 +361,61 @@ const main = async () => {
   solarSystem.add(ambientLight);
 
   // Add mouse interaction for rotating the torus
-  addMouseInteraction(renderer.domElement, scene, camera);
+  // addMouseInteraction(renderer.domElement, scene, camera);
+
+  // GUI
+  const gui = new GUI();
+  // Add light properties to GUI
+  const sunFolder = gui.addFolder('Sun');
+  sunFolder.addColor(sun.material, 'color').name('Color');
+  sunFolder.open();
+  // Checkbox control for zooming to Earth
+  // const controlsZoom = {
+  //   zoomToEarth: false,
+  // };
+
+  // gui
+  //   .add(controlsZoom, 'zoomToEarth')
+  //   .name('Zoom')
+  //   .onChange((value) => {
+  //     console.log(value, 'select');
+  //     animate({
+  //       cameraNearPlanet: value,
+  //     });
+  //   });
+
+  const zoom = {
+    mercury: 'mercury',
+    venus: 'venus',
+    earth: 'earth',
+    mars: 'mars',
+    jupiter: 'jupiter',
+    saturn: 'saturn',
+    uranus: 'uranus',
+    neptune: 'neptune',
+    sun: 'sun',
+  };
+
+  const guiControls = {
+    selectedPlanet: 'Sun', // Default selected planet
+  };
+
+  gui
+    .add(guiControls, 'selectedPlanet', Object.keys(zoom))
+    .name('Zoom to Planet')
+    .onChange((value) => {
+      // console.log(value, 'zoom');
+      let cameraNearPlanet = true;
+      if (value === 'sun') {
+        cameraNearPlanet = false;
+      }
+      animate({
+        planetName: value,
+        cameraNearPlanet,
+      });
+    });
+
+  const ringSaturn = gui.addFolder('ring');
 
   const animateSun = {
     scene,
@@ -349,6 +469,55 @@ const main = async () => {
     cube: solarSystem,
   };
   animate(animateSolarSystem);
+  const animateRing = {
+    cube: ring,
+    x: 0.0,
+    y: 0.0,
+    z: 0.05,
+  };
+  animate(animateRing);
+  const animateRing1 = {
+    cube: ring1,
+    x: 0.0,
+    y: 0.0,
+    z: -0.05,
+  };
+  animate(animateRing1);
+  const animateRing2 = {
+    cube: ring2,
+    x: 0.0,
+    y: 0.0,
+    z: 0.05,
+  };
+  animate(animateRing2);
+  const animateRing3 = {
+    cube: ring3,
+    x: 0.0,
+    y: 0.0,
+    z: -0.05,
+  };
+  animate(animateRing3);
+  const animateRing4 = {
+    cube: ring4,
+    x: 0.0,
+    y: 0.0,
+    z: 0.05,
+  };
+  animate(animateRing4);
+  const animateRing5 = {
+    cube: ring5,
+    x: 0.0,
+    y: 0.0,
+    z: -0.05,
+  };
+  animate(animateRing5);
+  const animateRing6 = {
+    cube: ring6,
+    x: 0.0,
+    y: 0.0,
+    z: 0.05,
+  };
+  animate(animateRing6);
   // const animateBelt = {
   //   cube: belt,
   //   x: 0,
@@ -435,25 +604,29 @@ const windowSphere = async (
 const windowRing = async (
   scene,
   materials,
-  radius,
-  tubeRadius,
+  innerRadius,
+  outerRadius,
   color,
   px,
   py,
   pz
 ) => {
-  const geometry = new THREE.TorusGeometry(radius, tubeRadius, 12, 48, 2.5);
+  const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 60, 1);
   const material =
     materials == 'standard'
       ? new THREE.MeshStandardMaterial({
           color,
           side: THREE.DoubleSide,
         })
-      : new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+      : new THREE.MeshBasicMaterial({
+          color,
+          side: THREE.DoubleSide,
+        });
   const ring = new THREE.Mesh(geometry, material);
   ring.position.set(px, py, pz);
   ring.rotation.x = Math.PI / 2;
-  ring.rotation.y = Math.PI;
+  // ring.rotation.y = Math.PI;
+  ring.layers.enable(1);
   scene.add(ring);
 
   return ring;
@@ -474,7 +647,7 @@ const createStarField = (scene) => {
     const distance = Math.sqrt(x * x + y * y + z * z);
 
     // Only push to array if distance is greater than 500
-    if (distance > 1000 && distance < 2000) {
+    if (distance > 1000 && distance < 4000) {
       starVertices.push(x, y, z);
     }
   }
@@ -619,11 +792,41 @@ const windowShape = (scene, shapePoints) => {
   return line;
 };
 
+// const windowText = async (scene, text, color, x, y, z) => {
+//   return new Promise((resolve, reject) => {
+//     // Load a built-in font
+//     const loader = new THREE.FontLoader();
+//     loader.load(
+//       'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json',
+//       function (font) {
+//         // Create a text geometry
+//         const textGeometry = new THREE.TextGeometry(text, {
+//           font: font, // Load your font data here or use a built-in font
+//           size: 1, // Size of the text
+//           height: 0.1, // Thickness of the text
+//           curveSegments: 12, // Number of segments for curves
+//           bevelEnabled: false, // Whether to enable beveling
+//         });
+//         const textMaterial = new THREE.MeshBasicMaterial({ color }); // Material for the text
+//         const textMesh = new THREE.Mesh(textGeometry, textMaterial); // Create a mesh with the text geometry
+//         textMesh.position.set(x, y, z);
+//         scene.add(textMesh); // Add the text mesh to the scene
+//         textMesh.visible = false;
+//         textMesh.name = 'textMesh';
+//         resolve(textMesh); // Resolve the Promise with the textMesh
+//       }
+//     );
+//   });
+// };
+
 let scene;
+let camera;
 let shapePoints = {};
 let cameraNearPlanet = false; // Flag to toggle camera movement
 let cameraPathRadius = 150; // Distance from the solar system
 let cameraPathAngle = 0; // Initial angle
+let planetName;
+let text;
 const animate = (animateCube) => {
   let animationCount = 0;
   let oldShapeMesh = null;
@@ -631,9 +834,24 @@ const animate = (animateCube) => {
   if (animateCube.scene) {
     scene = animateCube.scene;
   }
+  if (animateCube.camera) {
+    camera = animateCube.camera;
+  }
 
-  console.log(animateCube, 'animateCube');
-  console.log(scene, 'scene');
+  if (animateCube?.cameraNearPlanet) {
+    cameraNearPlanet = true;
+  } else {
+    // todo
+    cameraNearPlanet = false;
+  }
+  if (animateCube?.planetName) {
+    planetName = animateCube?.planetName;
+  }
+  // console.log(planetName, 'planetName');
+  // console.log(cameraNearPlanet, 'cameraNearPlanet');
+  // console.log(animateCube, 'animateCube');
+  // console.log(scene, 'scene');
+  // console.log(scene?.children[0]?.children[4], 'sceneEarth');
   const animateLoop = () => {
     // if (animationCount >= 200) {
     //   // Check if the animation loop has run 10 times
@@ -642,7 +860,7 @@ const animate = (animateCube) => {
     requestAnimationFrame(animateLoop);
     const time = Date.now() * 0.0001;
     // rotate planets around the sun
-    const angle = time * (365 / animateCube.cube.orbitalPeriod); // Speed based on orbital period
+    const angle = time * (365 / animateCube?.cube?.orbitalPeriod); // Speed based on orbital period
 
     if (
       animateCube?.x >= 0 &&
@@ -661,7 +879,7 @@ const animate = (animateCube) => {
         animateCube.cube?.distance * Math.sin(angle);
 
       let name = animateCube?.cube?.PlanetName;
-      yPoint = yPoint + animateCube.cube.position.y + 0.1;
+      yPoint = yPoint + animateCube.cube.position.y + 0.01;
       const point = new THREE.Vector3(
         animateCube.cube.position.x,
         yPoint,
@@ -718,47 +936,87 @@ const animate = (animateCube) => {
     }
 
     if (animateCube?.cube?.name == 'solarSystem') {
-      animateCube.cube.position.y += 0.1;
+      animateCube.cube.position.y += 0.01;
     }
 
     if (animateCube?.camera) {
       // Camera movement
+      animateCube.camera.position.y += 0.01; // Fixed height
       if (!cameraNearPlanet) {
-        cameraPathAngle += 0.01; // Adjust this for speed of rotation
-        animateCube.camera.position.x =
-          cameraPathRadius * Math.cos(cameraPathAngle);
-        animateCube.camera.position.z =
-          cameraPathRadius * Math.sin(cameraPathAngle);
-        animateCube.camera.position.y += 0.1; // Fixed height
+        cameraPathAngle += 0.005; // Adjust this for speed of rotation
+        // animateCube.camera.position.x =
+        //   cameraPathRadius * Math.cos(cameraPathAngle);
+        // animateCube.camera.position.z =
+        //   cameraPathRadius * Math.sin(cameraPathAngle);
+
+        camera?.position.lerp(
+          new THREE.Vector3(
+            cameraPathRadius * Math.cos(cameraPathAngle),
+            animateCube.camera.position.y,
+            cameraPathRadius * Math.sin(cameraPathAngle)
+          ),
+          0.03
+        );
+
         animateCube.camera.lookAt(
           new THREE.Vector3(0, animateCube.camera.position.y, 0)
         ); // Look at the center of the solar system
 
-        animateCube.camera.rotation.z += 1;
-      } else {
-        // Move camera closer to the selected planet (e.g., Earth)
-        const targetPlanet = scene.getObjectByName('earth'); // Adjust as necessary
-        if (targetPlanet) {
-          animateCube.camera.position.lerp(
-            targetPlanet.position.clone().add(new THREE.Vector3(10, 10, 10)),
-            0.05
-          ); // Adjust distance
-          animateCube?.camera.lookAt(targetPlanet.position);
-        }
+        // animateCube.camera.rotation.z += 1;
       }
     }
+    if (cameraNearPlanet && animateCube?.cube?.PlanetName == planetName) {
+      cameraPathAngle += 0.01;
+      // Move camera closer to the selected planet (e.g., Earth)
+      const targetPlanet = animateCube.cube; // Adjust as necessary
+      if (targetPlanet) {
+        camera?.position.lerp(
+          targetPlanet.position
+            .clone()
+            .add(
+              new THREE.Vector3(
+                30 * Math.cos(cameraPathAngle),
+                yPoint,
+                30 * Math.sin(cameraPathAngle)
+              )
+            ),
+          0.05
+        ); // Adjust distance
 
-    // document.addEventListener('keydown', (event) => {
-    //   if (event.key === 'p') {
-    //     // Press 'p' to toggle camera movement near planet
-    //     cameraNearPlanet = !cameraNearPlanet;
-    //   }
-    // });
+        camera?.lookAt(
+          new THREE.Vector3(
+            targetPlanet.position.x,
+            yPoint,
+            targetPlanet.position.z
+          )
+        );
+        // console.log(targetPlanet.position, 'targetPlanet');
+        // console.log(camera?.position, 'camera');
+      }
+      text = planetName;
+      // windowText(
+      //   scene,
+      //   text,
+      //   0xff0000,
+      //   targetPlanet.position.x,
+      //   targetPlanet.position.y,
+      //   targetPlanet.position.z
+      // );
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'e') {
+        // Press 'p' to toggle camera movement near planet
+        cameraNearPlanet = !cameraNearPlanet;
+      }
+    });
 
     // animateCube.renderer.render(animateCube.scene, animateCube.camera);
     animationCount++; // Increment the animation loop counter
   };
-  animateLoop();
+  if (animateCube?.cube) {
+    animateLoop();
+  }
 };
 
 main();
