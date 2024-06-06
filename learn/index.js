@@ -1,10 +1,10 @@
-import * as THREE from 'https://cdn.skypack.dev/three@0.133.1';
+import * as THREE from '../../node_modules/three/build/three.module.js';
 
-import { OrbitControls } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/controls/OrbitControls.js';
-import { EffectComposer } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/ShaderPass.js';
-import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/UnrealBloomPass.js';
+// import { OrbitControls } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/controls/OrbitControls.js';
+// import { EffectComposer } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/EffectComposer.js';
+// import { RenderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/RenderPass.js';
+// import { ShaderPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/ShaderPass.js';
+// import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.133.1/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { GUI } from 'https://cdn.skypack.dev/dat.gui';
 import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
 
@@ -22,19 +22,19 @@ const main = async () => {
   const world = new RAPIER.World(gravity);
   boxWorld(world, 200); // 200 size box
 
-  // Create a static ground plane
-  const groundBodyDesc = RAPIER.RigidBodyDesc.fixed();
-  const groundBody = world.createRigidBody(groundBodyDesc);
-  const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50, 0.1, 50);
-  world.createCollider(groundColliderDesc, groundBody);
+  // // Create a static ground plane
+  // const groundBodyDesc = RAPIER.RigidBodyDesc.fixed();
+  // const groundBody = world.createRigidBody(groundBodyDesc);
+  // const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100, 0.1, 100);
+  // world.createCollider(groundColliderDesc, groundBody);
 
-  // Create a Three.js floor mesh
-  const floorGeometry = new THREE.BoxGeometry(100, 0.2, 100); // Double the size of collider to match RAPIER
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.position.set(0, 0, 0); // Adjust the position to match the RAPIER ground plane
-  floor.receiveShadow = true; // Enable shadow receiving
-  scene.add(floor);
+  // // Create a Three.js floor mesh
+  // const floorGeometry = new THREE.BoxGeometry(200, 0.2, 200); // Double the size of collider to match RAPIER
+  // const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+  // const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  // floor.position.set(0, 0, 0); // Adjust the position to match the RAPIER ground plane
+  // floor.receiveShadow = true; // Enable shadow receiving
+  // scene.add(floor);
 
   // Add a physics box
   const boxPoints = {
@@ -52,10 +52,11 @@ const main = async () => {
     },
     canSleep: false,
     mass: 1,
-    restitution: 1,
+    restitution: 0.5,
   };
   const boxT = boxWithPhysics(boxPoints);
 
+  // Add a physics sphere(ball)
   const ball = {
     scene,
     color: 0xff000f,
@@ -65,14 +66,122 @@ const main = async () => {
     radius: 1,
     position: {
       x: 0,
-      y: 15,
-      z: 0,
+      y: 10,
+      z: -10,
     },
     canSleep: false,
     mass: 1,
-    restitution: 1,
+    restitution: 0.5,
   };
   const ballT = ballWithPhysics(ball);
+
+  // Add a physics capsule
+  const capsule = {
+    scene,
+    color: 0x00ffff,
+    wireframe: false,
+    materials: 'standard',
+    world,
+    radius: 1,
+    height: 2,
+    position: {
+      x: -10,
+      y: 10,
+      z: 0,
+    },
+    canSleep: false,
+    mass: 2,
+    restitution: 0.5,
+  };
+  const capsuleT = capsuleWithPhysics(capsule);
+
+  // Add a physics cylinder
+  const cylinder = {
+    scene,
+    color: 0x0000ff,
+    wireframe: false,
+    materials: 'standard',
+    world,
+    radiusTop: 1,
+    radiusBottom: 1,
+    radius: 1,
+    height: 2,
+    position: {
+      x: 0,
+      y: 10,
+      z: 10,
+    },
+    canSleep: false,
+    mass: 2,
+    restitution: 0.5,
+  };
+  const cylinderT = cylinderWithPhysics(cylinder);
+
+  // Add a physics cone
+  const cone = {
+    scene,
+    color: 0x00ffff,
+    wireframe: false,
+    materials: 'standard',
+    world,
+    radius: 1,
+    height: 2,
+    position: {
+      x: -5,
+      y: 10,
+      z: 0,
+    },
+    canSleep: false,
+    mass: 2,
+    restitution: 0.5,
+  };
+  const coneT = coneWithPhysics(cone);
+
+  // Create heightfield data
+  const width = 20; // Make sure this is consistent with the data
+  const height = 20; // Make sure this is consistent with the data
+  const heights = new Float32Array(width * height); // Correctly sized array
+
+  for (let i = 0; i < width * height; i++) {
+    heights[i] = Math.random() * 5; // Example height data
+  }
+
+  // Create Three.js heightfield geometry
+  const geometry = new THREE.PlaneGeometry(
+    200,
+    200,
+    width - 1,
+    height - 1
+  );
+  const position = geometry.attributes.position;
+console.log(position === geometry.attributes.position)
+  for (let i = 0; i < position.count; i++) {
+    position.setZ(i, heights[i]);
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+console.log(geometry)
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x00ff00,
+    wireframe: true,
+  });
+  const heightfieldMesh = new THREE.Mesh(geometry, material);
+  heightfieldMesh.rotation.x = -Math.PI / 2; // Rotate to make it horizontal
+  heightfieldMesh.position.set(0, 2, 0);
+  heightfieldMesh.name = 'path'
+  scene.add(heightfieldMesh);
+
+  // Create Rapier.js heightfield collider
+  const scale = new RAPIER.Vector3(200, 1, 200); // Ensure scale is properly defined
+  const heightfieldBodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(0, 2, 0);
+  const heightfieldBody = world.createRigidBody(heightfieldBodyDesc);
+  const heightfieldColliderDesc = RAPIER.ColliderDesc.heightfield(
+    width - 1,
+    height - 1,
+    heights,
+    scale
+  ).setMass(1).setRestitution(.1);;
+  world.createCollider(heightfieldColliderDesc, heightfieldBody);
 
   // Add ambient light to illuminate the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
@@ -91,6 +200,10 @@ const main = async () => {
   animate({ scene, camera, renderer, world });
   animate({ cube: boxT.box2, cubeBody: boxT.cubeBody });
   animate({ cube: ballT.sphere, cubeBody: ballT.ballBody });
+  animate({ cube: capsuleT.capsule2, cubeBody: capsuleT.capsuleBody });
+  animate({ cube: cylinderT.cylinder2, cubeBody: cylinderT.cylinderBody });
+  animate({ cube: coneT.cone2, cubeBody: coneT.coneBody });
+  // animate({ cube: heightfieldMesh, cubeBody: heightfieldBody });
 };
 
 const windowCamera = async () => {
@@ -158,9 +271,7 @@ const boxWithPhysics = (cube) => {
 };
 
 const ballWithPhysics = (ball) => {
-  const geometry = new THREE.SphereGeometry(
-    ball.radius,64,32
-  );
+  const geometry = new THREE.SphereGeometry(ball.radius, 64, 32);
   const material =
     ball.materials == 'standard'
       ? new THREE.MeshStandardMaterial({
@@ -189,6 +300,118 @@ const ballWithPhysics = (ball) => {
   ball.world.createCollider(ballShape, ballBody);
 
   return { sphere, ballBody };
+};
+
+const capsuleWithPhysics = (capsule) => {
+  const geometry = new THREE.CapsuleGeometry(
+    capsule.radius,
+    capsule.height,
+    32,
+    64
+  );
+  const material =
+    capsule.materials == 'standard'
+      ? new THREE.MeshStandardMaterial({
+          color: capsule.color,
+          wireframe: capsule.wireframe,
+        })
+      : new THREE.MeshBasicMaterial({
+          color: capsule.color,
+          wireframe: capsule.wireframe,
+        });
+  const capsule2 = new THREE.Mesh(geometry, material);
+  capsule2.position.set(
+    capsule.position.x,
+    capsule.position.y,
+    capsule.position.z
+  );
+  capsule.scene.add(capsule2);
+
+  const capsulePosition = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(capsule.position.x, capsule.position.y, capsule.position.z) // position of the cube
+    .setCanSleep(capsule.canSleep); // Enable can sleep
+  const capsuleBody = capsule.world.createRigidBody(capsulePosition);
+  const capsuleShape = RAPIER.ColliderDesc.capsule(
+    capsule.height / 2,
+    capsule.radius
+  )
+    .setMass(capsule.mass) // mass of the cube
+    .setRestitution(capsule.restitution); // restitution of the cube;
+  capsule.world.createCollider(capsuleShape, capsuleBody);
+
+  return { capsule2, capsuleBody };
+};
+
+const cylinderWithPhysics = (cylinder) => {
+  const geometry = new THREE.CylinderGeometry(
+    cylinder.radius,
+    cylinder.radius,
+    cylinder.height,
+    32
+  );
+  const material =
+    cylinder.materials == 'standard'
+      ? new THREE.MeshStandardMaterial({
+          color: cylinder.color,
+          wireframe: cylinder.wireframe,
+        })
+      : new THREE.MeshBasicMaterial({
+          color: cylinder.color,
+          wireframe: cylinder.wireframe,
+        });
+  const cylinder2 = new THREE.Mesh(geometry, material);
+  cylinder2.position.set(
+    cylinder.position.x,
+    cylinder.position.y,
+    cylinder.position.z
+  );
+  cylinder.scene.add(cylinder2);
+
+  const cylinderPosition = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(
+      cylinder.position.x,
+      cylinder.position.y,
+      cylinder.position.z
+    ) // position of the cube
+    .setCanSleep(cylinder.canSleep); // Enable can sleep
+  const cylinderBody = cylinder.world.createRigidBody(cylinderPosition);
+  const cylinderShape = RAPIER.ColliderDesc.cylinder(
+    cylinder.height / 2,
+    cylinder.radius
+  )
+    .setMass(cylinder.mass) // mass of the cube
+    .setRestitution(cylinder.restitution); // restitution of the cube;
+  cylinder.world.createCollider(cylinderShape, cylinderBody);
+
+  return { cylinder2, cylinderBody };
+};
+
+const coneWithPhysics = (cone) => {
+  const geometry = new THREE.ConeGeometry(cone.radius, cone.height, 32);
+  const material =
+    cone.materials == 'standard'
+      ? new THREE.MeshStandardMaterial({
+          color: cone.color,
+          wireframe: cone.wireframe,
+        })
+      : new THREE.MeshBasicMaterial({
+          color: cone.color,
+          wireframe: cone.wireframe,
+        });
+  const cone2 = new THREE.Mesh(geometry, material);
+  cone2.position.set(cone.position.x, cone.position.y, cone.position.z);
+  cone.scene.add(cone2);
+
+  const conePosition = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(cone.position.x, cone.position.y, cone.position.z) // position of the cube
+    .setCanSleep(cone.canSleep); // Enable can sleep
+  const coneBody = cone.world.createRigidBody(conePosition);
+  const coneShape = RAPIER.ColliderDesc.cone(cone.height / 2, cone.radius)
+    .setMass(cone.mass) // mass of the cube
+    .setRestitution(cone.restitution); // restitution of the cube;
+  cone.world.createCollider(coneShape, coneBody);
+
+  return { cone2, coneBody };
 };
 
 const boxWorld = (world, value) => {
@@ -326,18 +549,21 @@ const animate = (animateCube) => {
       // Update the position and rotation of the Three.js cube
       const cubePosition = animateCube.cubeBody.translation();
       const cubeRotation = animateCube.cubeBody.rotation();
-      // console.log(cubePosition, cubeRotation)
       animateCube?.cube?.position.set(
         cubePosition.x,
         cubePosition.y,
         cubePosition.z
-      );
-      animateCube?.cube?.quaternion.set(
+        );
+        animateCube?.cube?.quaternion.set(
         cubeRotation.x,
         cubeRotation.y,
         cubeRotation.z,
         cubeRotation.w
-      );
+        );
+        if (animateCube?.cube?.name == 'path') {
+          // console.log(cubePosition, cubeRotation)
+          // console.log(animateCube?.cube?.position, animateCube?.cube?.quaternion)
+        }
     }
 
     renderer?.render(scene, camera);
