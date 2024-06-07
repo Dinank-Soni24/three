@@ -22,19 +22,19 @@ const main = async () => {
   const world = new RAPIER.World(gravity);
   boxWorld(world, 200); // 200 size box
 
-  // // Create a static ground plane
-  // const groundBodyDesc = RAPIER.RigidBodyDesc.fixed();
-  // const groundBody = world.createRigidBody(groundBodyDesc);
-  // const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100, 0.1, 100);
-  // world.createCollider(groundColliderDesc, groundBody);
+  // Create a static ground plane
+  const groundBodyDesc = RAPIER.RigidBodyDesc.fixed();
+  const groundBody = world.createRigidBody(groundBodyDesc);
+  const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100, 0.1, 100);
+  world.createCollider(groundColliderDesc, groundBody);
 
-  // // Create a Three.js floor mesh
-  // const floorGeometry = new THREE.BoxGeometry(200, 0.2, 200); // Double the size of collider to match RAPIER
-  // const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  // const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  // floor.position.set(0, 0, 0); // Adjust the position to match the RAPIER ground plane
-  // floor.receiveShadow = true; // Enable shadow receiving
-  // scene.add(floor);
+  // Create a Three.js floor mesh
+  const floorGeometry = new THREE.BoxGeometry(200, 0.2, 200); // Double the size of collider to match RAPIER
+  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  floor.position.set(0, 0, 0); // Adjust the position to match the RAPIER ground plane
+  floor.receiveShadow = true; // Enable shadow receiving
+  scene.add(floor);
 
   // Add a physics box
   const boxPoints = {
@@ -47,7 +47,7 @@ const main = async () => {
     depth: 2,
     position: {
       x: 0,
-      y: 10,
+      y: 50,
       z: 0,
     },
     canSleep: false,
@@ -66,7 +66,7 @@ const main = async () => {
     radius: 1,
     position: {
       x: 0,
-      y: 10,
+      y: 50,
       z: -10,
     },
     canSleep: false,
@@ -86,7 +86,7 @@ const main = async () => {
     height: 2,
     position: {
       x: -10,
-      y: 10,
+      y: 50,
       z: 0,
     },
     canSleep: false,
@@ -108,7 +108,7 @@ const main = async () => {
     height: 2,
     position: {
       x: 0,
-      y: 10,
+      y: 50,
       z: 10,
     },
     canSleep: false,
@@ -128,7 +128,7 @@ const main = async () => {
     height: 2,
     position: {
       x: -5,
-      y: 10,
+      y: 50,
       z: 0,
     },
     canSleep: false,
@@ -137,51 +137,72 @@ const main = async () => {
   };
   const coneT = coneWithPhysics(cone);
 
-  // Create heightfield data
-  const width = 20; // Make sure this is consistent with the data
-  const height = 20; // Make sure this is consistent with the data
-  const heights = new Float32Array(width * height); // Correctly sized array
+  // // Add a physics Plane(HightField)
+  // const plane = {
+  //   scene,
+  //   color: 0xdfbf9f,
+  //   wireframe: false,
+  //   materials: 'standard',
+  //   world,
+  //   width: 200,
+  //   height: 200,
+  //   heightOfPoint: 20,
+  //   widthSegment: 5,
+  //   heightSegment: 5,
+  //   position: {
+  //     x: 0,
+  //     y: -10,
+  //     z: 0,
+  //   },
+  //   canSleep: false,
+  //   mass: 0,
+  //   fixed: true,
+  //   restitution: 0.5,
+  // };
+  // const planeT = planeWithPhysics(plane);
 
-  for (let i = 0; i < width * height; i++) {
-    heights[i] = Math.random() * 5; // Example height data
-  }
-
-  // Create Three.js heightfield geometry
-  const geometry = new THREE.PlaneGeometry(
-    200,
-    200,
-    width - 1,
-    height - 1
-  );
-  const position = geometry.attributes.position;
-console.log(position === geometry.attributes.position)
-  for (let i = 0; i < position.count; i++) {
-    position.setZ(i, heights[i]);
-  }
-  position.needsUpdate = true;
-  geometry.computeVertexNormals();
-console.log(geometry)
-  const material = new THREE.MeshStandardMaterial({
+  // Create a geometry in Three.js
+  const geometry = new THREE.BoxGeometry(1, 1, 1); // Example geometry
+  const material = new THREE.MeshBasicMaterial({
     color: 0x00ff00,
     wireframe: true,
   });
-  const heightfieldMesh = new THREE.Mesh(geometry, material);
-  heightfieldMesh.rotation.x = -Math.PI / 2; // Rotate to make it horizontal
-  heightfieldMesh.position.set(0, 2, 0);
-  heightfieldMesh.name = 'path'
-  scene.add(heightfieldMesh);
+  const mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+  mesh.position.set(0, 50, 0);
 
-  // Create Rapier.js heightfield collider
-  const scale = new RAPIER.Vector3(200, 1, 200); // Ensure scale is properly defined
-  const heightfieldBodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(0, 2, 0);
-  const heightfieldBody = world.createRigidBody(heightfieldBodyDesc);
-  const heightfieldColliderDesc = RAPIER.ColliderDesc.heightfield(
-    width - 1,
-    height - 1,
-    heights,
-    scale
-  ).setMass(1).setRestitution(.1);;
-  world.createCollider(heightfieldColliderDesc, heightfieldBody);
+  // Extract vertices from Three.js geometry
+  const vertices = [];
+  geometry.attributes.position.array.forEach((v, idx) => {
+    if (idx % 3 === 0) {
+      vertices.push({
+        x: geometry.attributes.position.array[idx],
+        y: geometry.attributes.position.array[idx + 1],
+        z: geometry.attributes.position.array[idx + 2],
+      });
+    }
+  });
+
+  // Create Rapier.js Convex Mesh
+  let points = new Float32Array(vertices.length);
+  for (let i = 0; i < vertices.length; i++) {
+    points[i] = Math.random() * 1; // Example plane.heightSegment data
+    // heightsR[i] = -heights[i];
+  }
+
+
+  console.log(points);
+  const colliderDesc = RAPIER.ColliderDesc.convexHull(points);
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 50, 0);
+  const rigidBody = world.createRigidBody(rigidBodyDesc);
+  const collider = world.createCollider(colliderDesc, rigidBody);
+
+  const spotLight = new THREE.SpotLight(0xffffff, 0.5); // White light
+  spotLight.position.set(-200, 20, 200); // Position the light
+  spotLight.castShadow = true; // Enable shadow casting
+  spotLight.penumbra = 0.15;
+  // spotLight.target.position.set(0, -10, 0); // Set the target of the spotlight to a point below the scene
+  scene.add(spotLight);
 
   // Add ambient light to illuminate the scene
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
@@ -203,7 +224,7 @@ console.log(geometry)
   animate({ cube: capsuleT.capsule2, cubeBody: capsuleT.capsuleBody });
   animate({ cube: cylinderT.cylinder2, cubeBody: cylinderT.cylinderBody });
   animate({ cube: coneT.cone2, cubeBody: coneT.coneBody });
-  // animate({ cube: heightfieldMesh, cubeBody: heightfieldBody });
+  animate({ cube: mesh, cubeBody: rigidBody });
 };
 
 const windowCamera = async () => {
@@ -215,7 +236,7 @@ const windowCamera = async () => {
     3000 // far clipping plane
   );
 
-  camera.position.set(0, 10, 40); // camera position
+  camera.position.set(0, 0, 240); // camera position
 
   return camera;
 };
@@ -414,6 +435,79 @@ const coneWithPhysics = (cone) => {
   return { cone2, coneBody };
 };
 
+const planeWithPhysics = (plane) => {
+  const heights = new Float32Array(plane.widthSegment * plane.heightSegment); // Correctly sized array
+  const heightsR = new Float32Array(plane.widthSegment * plane.heightSegment); // Correctly sized array
+
+  for (let i = 0; i < plane.widthSegment * plane.heightSegment; i++) {
+    heights[i] = -Math.random() * plane.heightOfPoint; // Example plane.heightSegment data
+    heightsR[i] = -heights[i];
+  }
+
+  // Create Three.js heightfield geometry
+  const geometry = new THREE.PlaneGeometry(
+    plane.width,
+    plane.height,
+    plane.widthSegment - 1,
+    plane.heightSegment - 1
+  );
+  // Apply rotation to Three.js geometry to match Rapier.js heightfield
+  const position = geometry.attributes.position;
+  for (let i = 0; i < position.count; i++) {
+    position.setZ(i, heights[i]);
+  }
+
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshPhongMaterial({
+    color: plane.color,
+    wireframe: plane.wireframe,
+    emissive: 0x000000,
+    specular: 0x4f4f4f,
+    shininess: 100,
+    flatShading: true,
+    side: THREE.DoubleSide,
+  });
+  const planeWithHightField = new THREE.Mesh(geometry, material);
+
+  planeWithHightField.rotation.y = THREE.MathUtils.degToRad(-90); // Rotate to make it horizontal
+  const group = new THREE.Group();
+  group.add(planeWithHightField);
+  group.rotation.z += THREE.MathUtils.degToRad(90); // Rotate to make it horizontal
+  group.position.set(plane.position.x, plane.position.y, plane.position.z);
+  plane.scene.add(group);
+
+  // Create Rapier.js heightfield collider
+  const scale = new RAPIER.Vector3(plane.width, 1, plane.height); // Ensure scale is properly defined y=1 because it multiply the heights
+
+  const heightfieldBodyDesc =
+    plane.fixed === true
+      ? RAPIER.RigidBodyDesc.fixed().setTranslation(
+          plane.position.x,
+          plane.position.y,
+          plane.position.z
+        )
+      : RAPIER.RigidBodyDesc.dynamic().setTranslation(
+          plane.position.x,
+          plane.position.y,
+          plane.position.z
+        );
+  const heightfieldBody = plane.world.createRigidBody(heightfieldBodyDesc);
+
+  const heightfieldColliderDesc = RAPIER.ColliderDesc.heightfield(
+    plane.widthSegment - 1,
+    plane.heightSegment - 1,
+    heightsR,
+    scale
+  )
+    .setMass(plane.mass)
+    .setRestitution(plane.restitution);
+  plane.world.createCollider(heightfieldColliderDesc, heightfieldBody);
+
+  return { group, heightfieldBody };
+};
+
 const boxWorld = (world, value) => {
   const x = { x: 0, y: value, z: value };
   const y = { x: value, y: 0, z: value };
@@ -549,21 +643,18 @@ const animate = (animateCube) => {
       // Update the position and rotation of the Three.js cube
       const cubePosition = animateCube.cubeBody.translation();
       const cubeRotation = animateCube.cubeBody.rotation();
+
       animateCube?.cube?.position.set(
         cubePosition.x,
         cubePosition.y,
         cubePosition.z
-        );
-        animateCube?.cube?.quaternion.set(
+      );
+      animateCube?.cube?.quaternion.set(
         cubeRotation.x,
         cubeRotation.y,
         cubeRotation.z,
         cubeRotation.w
-        );
-        if (animateCube?.cube?.name == 'path') {
-          // console.log(cubePosition, cubeRotation)
-          // console.log(animateCube?.cube?.position, animateCube?.cube?.quaternion)
-        }
+      );
     }
 
     renderer?.render(scene, camera);
