@@ -22,19 +22,19 @@ const main = async () => {
   const world = new RAPIER.World(gravity);
   boxWorld(world, 200); // 200 size box
 
-  // Create a static ground plane
-  const groundBodyDesc = RAPIER.RigidBodyDesc.fixed();
-  const groundBody = world.createRigidBody(groundBodyDesc);
-  const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100, 0.1, 100);
-  world.createCollider(groundColliderDesc, groundBody);
+  // // Create a static ground plane
+  // const groundBodyDesc = RAPIER.RigidBodyDesc.fixed();
+  // const groundBody = world.createRigidBody(groundBodyDesc);
+  // const groundColliderDesc = RAPIER.ColliderDesc.cuboid(100, 0.1, 100);
+  // world.createCollider(groundColliderDesc, groundBody);
 
-  // Create a Three.js floor mesh
-  const floorGeometry = new THREE.BoxGeometry(200, 0.2, 200); // Double the size of collider to match RAPIER
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.position.set(0, 0, 0); // Adjust the position to match the RAPIER ground plane
-  floor.receiveShadow = true; // Enable shadow receiving
-  scene.add(floor);
+  // // Create a Three.js floor mesh
+  // const floorGeometry = new THREE.BoxGeometry(200, 0.2, 200); // Double the size of collider to match RAPIER
+  // const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+  // const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  // floor.position.set(0, 0, 0); // Adjust the position to match the RAPIER ground plane
+  // floor.receiveShadow = true; // Enable shadow receiving
+  // scene.add(floor);
 
   // Add a physics box
   const boxPoints = {
@@ -137,65 +137,29 @@ const main = async () => {
   };
   const coneT = coneWithPhysics(cone);
 
-  // // Add a physics Plane(HightField)
-  // const plane = {
-  //   scene,
-  //   color: 0xdfbf9f,
-  //   wireframe: false,
-  //   materials: 'standard',
-  //   world,
-  //   width: 200,
-  //   height: 200,
-  //   heightOfPoint: 20,
-  //   widthSegment: 5,
-  //   heightSegment: 5,
-  //   position: {
-  //     x: 0,
-  //     y: -10,
-  //     z: 0,
-  //   },
-  //   canSleep: false,
-  //   mass: 0,
-  //   fixed: true,
-  //   restitution: 0.5,
-  // };
-  // const planeT = planeWithPhysics(plane);
-
-  // Create a geometry in Three.js
-  const geometry = new THREE.BoxGeometry(1, 1, 1); // Example geometry
-  const material = new THREE.MeshBasicMaterial({
-    color: 0x00ff00,
-    wireframe: true,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
-  mesh.position.set(0, 50, 0);
-
-  // Extract vertices from Three.js geometry
-  const vertices = [];
-  geometry.attributes.position.array.forEach((v, idx) => {
-    if (idx % 3 === 0) {
-      vertices.push({
-        x: geometry.attributes.position.array[idx],
-        y: geometry.attributes.position.array[idx + 1],
-        z: geometry.attributes.position.array[idx + 2],
-      });
-    }
-  });
-
-  // Create Rapier.js Convex Mesh
-  let points = new Float32Array(vertices.length);
-  for (let i = 0; i < vertices.length; i++) {
-    points[i] = Math.random() * 1; // Example plane.heightSegment data
-    // heightsR[i] = -heights[i];
-  }
-
-
-  console.log(points);
-  const colliderDesc = RAPIER.ColliderDesc.convexHull(points);
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(0, 50, 0);
-  const rigidBody = world.createRigidBody(rigidBodyDesc);
-  const collider = world.createCollider(colliderDesc, rigidBody);
+  // Add a physics Plane(HightField)
+  const plane = {
+    scene,
+    color: 0xdfbf9f,
+    wireframe: false,
+    materials: 'standard',
+    world,
+    width: 200,
+    height: 200,
+    heightOfPoint: 20,
+    widthSegment: 5,
+    heightSegment: 5,
+    position: {
+      x: 0,
+      y: -10,
+      z: 0,
+    },
+    canSleep: false,
+    mass: 0,
+    fixed: true,
+    restitution: 0.5,
+  };
+  const planeT = planeWithPhysics(plane);
 
   const spotLight = new THREE.SpotLight(0xffffff, 0.5); // White light
   spotLight.position.set(-200, 20, 200); // Position the light
@@ -224,7 +188,8 @@ const main = async () => {
   animate({ cube: capsuleT.capsule2, cubeBody: capsuleT.capsuleBody });
   animate({ cube: cylinderT.cylinder2, cubeBody: cylinderT.cylinderBody });
   animate({ cube: coneT.cone2, cubeBody: coneT.coneBody });
-  animate({ cube: mesh, cubeBody: rigidBody });
+  // animate({ cube: group, cubeBody: rigidBody });
+  // animate({ cube: cylinderJv.cylinder2, cubeBody: coneJv.coneBody });
 };
 
 const windowCamera = async () => {
@@ -404,7 +369,7 @@ const cylinderWithPhysics = (cylinder) => {
     .setRestitution(cylinder.restitution); // restitution of the cube;
   cylinder.world.createCollider(cylinderShape, cylinderBody);
 
-  return { cylinder2, cylinderBody };
+  return { cylinder2, cylinderBody, cylinderPosition };
 };
 
 const coneWithPhysics = (cone) => {
@@ -423,9 +388,12 @@ const coneWithPhysics = (cone) => {
   cone2.position.set(cone.position.x, cone.position.y, cone.position.z);
   cone.scene.add(cone2);
 
-  const conePosition = RAPIER.RigidBodyDesc.dynamic()
-    .setTranslation(cone.position.x, cone.position.y, cone.position.z) // position of the cube
-    .setCanSleep(cone.canSleep); // Enable can sleep
+  const conePosition = cone.body
+    ? cone.body
+    : RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(cone.position.x, cone.position.y, cone.position.z) // position of the cube
+        .setCanSleep(cone.canSleep); // Enable can sleep
+  console.log(cone.body);
   const coneBody = cone.world.createRigidBody(conePosition);
   const coneShape = RAPIER.ColliderDesc.cone(cone.height / 2, cone.radius)
     .setMass(cone.mass) // mass of the cube
@@ -643,6 +611,9 @@ const animate = (animateCube) => {
       // Update the position and rotation of the Three.js cube
       const cubePosition = animateCube.cubeBody.translation();
       const cubeRotation = animateCube.cubeBody.rotation();
+      if (animateCube?.cube.name == 'group' && animationCount < 4) {
+        console.log(cubePosition, cubeRotation, 'done');
+      }
 
       animateCube?.cube?.position.set(
         cubePosition.x,
@@ -655,6 +626,9 @@ const animate = (animateCube) => {
         cubeRotation.z,
         cubeRotation.w
       );
+      if (animateCube?.cube.name == 'group' && animationCount < 4) {
+        console.log(animateCube?.cube?.position, animateCube?.cube?.quaternion);
+      }
     }
 
     renderer?.render(scene, camera);
